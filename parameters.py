@@ -2,6 +2,8 @@ SAMPLING_RATE = 44100
 N_FFT = 1024
 OVERLAP = 0.75
 
+PESQ_SAMPLING_RATE = 16000
+
 CLEAN_AUDIO_FOLDER = "data/clean/dev-clean/LibriSpeech/dev-clean/3170/137482/"
 NOISES_FOLDER = "data/noise/"
 

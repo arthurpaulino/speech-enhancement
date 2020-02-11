@@ -1,5 +1,10 @@
 import numpy as np
 
+from pypesq import pesq as pesq_fn
+import librosa as lr
+
+from parameters import SAMPLING_RATE, PESQ_SAMPLING_RATE
+
 
 VALID_AUDIO_EXTENSIONS = ["mp3", "ogg", "wav", "flac", "aac", "wma"]
 
@@ -28,3 +33,10 @@ def filled_sum(y_1, y_2):
     if mod != 0:
         s[big_size - mod : big_size] += sml[0 : mod]
     return s
+
+
+def pesq(y_ref, y_deg):
+    if PESQ_SAMPLING_RATE != SAMPLING_RATE:
+        y_ref = lr.core.resample(y_ref, SAMPLING_RATE, PESQ_SAMPLING_RATE)
+        y_deg = lr.core.resample(y_deg, SAMPLING_RATE, PESQ_SAMPLING_RATE)
+    return pesq_fn(y_ref, y_deg, PESQ_SAMPLING_RATE)

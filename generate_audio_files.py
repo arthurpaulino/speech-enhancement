@@ -42,4 +42,3 @@ for clean_path in glob(CLEAN_AUDIO_FOLDER + "*"):
                 ]
             ) + ".wav"
             sf.write(GENERATED_NOISY_FOLDER + filename, y_mixed, SAMPLING_RATE)
-            exit()
