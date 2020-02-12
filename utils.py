@@ -1,5 +1,6 @@
 from gc import collect
 from glob import glob
+import json
 import os
 
 from pypesq import pesq as pesq_fn
@@ -8,6 +9,13 @@ import librosa as lr
 import numpy as np
 
 from parameters import *
+
+
+VALID_AUDIO_EXTENSIONS = ["mp3", "ogg", "wav", "flac", "aac", "wma"]
+
+EXPERIMENT_FOLDER = "data/generated/" + EXPERIMENT_NAME + "/"
+EXPERIMENT_CLEAN_FOLDER = EXPERIMENT_FOLDER + "clean/"
+EXPERIMENT_NOISY_FOLDER = EXPERIMENT_FOLDER + "noisy/"
 
 
 def is_valid_audio_file(path):
@@ -43,8 +51,13 @@ def pesq(y_ref, y_deg):
     return pesq_fn(y_ref, y_deg, PESQ_SAMPLING_RATE)
 
 
+def setup_experiment_env():
+    if not os.path.exists(EXPERIMENT_FOLDER):
+        os.makedirs(EXPERIMENT_FOLDER)
+
+
 def generate_audio_files():
-    for folder in [GENERATED_CLEAN_FOLDER, GENERATED_NOISY_FOLDER]:
+    for folder in [EXPERIMENT_CLEAN_FOLDER, EXPERIMENT_NOISY_FOLDER]:
         if not os.path.exists(folder):
             os.makedirs(folder)
 
@@ -57,7 +70,7 @@ def generate_audio_files():
         clean_name = filename_from_path(clean_path)
 
         sf.write(
-            GENERATED_CLEAN_FOLDER + clean_name + ".wav",
+            EXPERIMENT_CLEAN_FOLDER + clean_name + ".wav",
             y_clean,
             SAMPLING_RATE
         )
@@ -82,10 +95,15 @@ def generate_audio_files():
                     str(round(100 * noise_db_multiplier))
                 ]) + ".wav"
 
-                generated_noisy_file_path = GENERATED_NOISY_FOLDER + filename
+                generated_noisy_file_path = EXPERIMENT_NOISY_FOLDER + filename
 
                 noisy_to_clean_paths[generated_noisy_file_path] = clean_path
 
                 sf.write(generated_noisy_file_path, y_mixed, SAMPLING_RATE)
+
+    json.dump(
+        noisy_to_clean_paths,
+        open(EXPERIMENT_FOLDER + "noisy_to_clean_pairs.json", "w")
+    )
 
     return noisy_to_clean_paths
