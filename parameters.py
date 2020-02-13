@@ -12,3 +12,5 @@ CLEAN_AUDIO_FOLDER = "data/clean_test/"
 NOISES_FOLDER = "data/noise_test/"
 
 NOISE_DB_MULTIPLIERS = [1.2, 1, 0.8, 0.6, 0.4]
+
+VALID_AUDIO_EXTENSIONS = ["mp3", "ogg", "wav", "flac", "aac", "wma"]
