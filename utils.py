@@ -1,3 +1,5 @@
+import json
+
 from pypesq import pesq as pesq_fn
 import librosa as lr
 
@@ -28,6 +30,14 @@ def filled_sum(y_1, y_2):
     if mod != 0:
         s[big_size - mod : big_size] += sml[0 : mod]
     return s
+
+
+def json_load(path):
+    return json.load(open(path, "r"))
+
+
+def json_dump(obj, path):
+    json.dump(obj, open(path, "w"))
 
 
 def pesq(y_ref, y_deg):
