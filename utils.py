@@ -1,9 +1,17 @@
+import pickle
 import json
 
+import numpy as np
+
 from pypesq import pesq as pesq_fn
+import soundfile as sf
 import librosa as lr
 
 from parameters import *
+
+
+n_fft = round(SAMPLING_RATE * FFT_MS / 1000)
+hop_length = round(n_fft * (1 - OVERLAP))
 
 
 def is_valid_audio_file(path):
@@ -13,6 +21,15 @@ def is_valid_audio_file(path):
 
 def filename_from_path(path):
     return path.split("/")[-1].split(".")[0]
+
+
+def file_to_y(path):
+    y, _ = lr.load(path, sr=SAMPLING_RATE)
+    return y
+
+
+def y_to_file(y, path):
+    sf.write(path, y, SAMPLING_RATE)
 
 
 def filled_sum(y_1, y_2):
@@ -38,6 +55,24 @@ def json_load(path):
 
 def json_dump(obj, path):
     json.dump(obj, open(path, "w"))
+
+
+def pkl_load(path):
+    return pickle.load(open(path, "rb"))
+
+
+def pkl_dump(obj, path):
+    pickle.dump(obj, open(path, "wb"))
+
+
+def y_to_abslt_angle(y):
+    D = lr.core.stft(y=y, n_fft=n_fft, hop_length=hop_length)
+    return np.abs(D), np.angle(D)
+
+
+def abslt_angle_to_y(abslt, angle):
+    D = abslt * (np.cos(angle) + np.sin(angle) * 1j)
+    return lr.core.istft(D, hop_length=hop_length)
 
 
 def pesq(y_ref, y_deg):
