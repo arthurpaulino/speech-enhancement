@@ -91,9 +91,11 @@ for clean_path in glob(clean_audio_folder_slash + "*"):
 
             y_to_file(y_mixed, generated_noisy_file_path)
 
-for obj, filename in zip(
-        [noisy_to_clean, clean_to_noisy, audio_to_abslt, audio_to_angle],
-        ["noisy_to_clean", "clean_to_noisy", "audio_to_abslt", "audio_to_angle"]
-    ):
+objs = [noisy_to_clean, clean_to_noisy,
+        audio_to_abslt, audio_to_angle]
 
+filenames = ["noisy_to_clean", "clean_to_noisy",
+             "audio_to_abslt", "audio_to_angle"]
+
+for obj, filename in zip(objs, filenames):
     json_dump(obj, experiment_folder + filename + ".json")

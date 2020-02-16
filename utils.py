@@ -49,6 +49,16 @@ def filled_sum(y_1, y_2):
     return s
 
 
+def y_to_abslt_angle(y):
+    D = lr.core.stft(y=y, n_fft=n_fft, hop_length=hop_length).T
+    return np.abs(D), np.angle(D)
+
+
+def abslt_angle_to_y(abslt, angle):
+    D = abslt * (np.cos(angle) + np.sin(angle) * 1j)
+    return lr.core.istft(D.T, hop_length=hop_length)
+
+
 def json_load(path):
     return json.load(open(path, "r"))
 
@@ -63,16 +73,6 @@ def pkl_load(path):
 
 def pkl_dump(obj, path):
     pickle.dump(obj, open(path, "wb"))
-
-
-def y_to_abslt_angle(y):
-    D = lr.core.stft(y=y, n_fft=n_fft, hop_length=hop_length)
-    return np.abs(D), np.angle(D)
-
-
-def abslt_angle_to_y(abslt, angle):
-    D = abslt * (np.cos(angle) + np.sin(angle) * 1j)
-    return lr.core.istft(D, hop_length=hop_length)
 
 
 def pesq(y_ref, y_deg):
