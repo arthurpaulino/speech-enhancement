@@ -5,22 +5,8 @@ from parameters import *
 from utils import *
 
 
-clean_audio_folder_slash = CLEAN_AUDIO_FOLDER + "/"\
-    if not CLEAN_AUDIO_FOLDER.endswith("/") else CLEAN_AUDIO_FOLDER
-
-noises_folder_slash = NOISES_FOLDER + "/"\
-    if not NOISES_FOLDER.endswith("/") else NOISES_FOLDER
-
-experiment_folder = "data/generated/" + EXPERIMENT_NAME + "/"
-
-experiment_clean_folder = experiment_folder + "clean/"
-experiment_noisy_folder = experiment_folder + "noisy/"
-
-experiment_abslt_folder = experiment_folder + "abslt/"
-experiment_angle_folder = experiment_folder + "angle/"
-
-for folder in [experiment_clean_folder, experiment_noisy_folder,
-               experiment_abslt_folder, experiment_angle_folder]:
+for folder in [EXPERIMENT_FOLDER_CLEAN, EXPERIMENT_FOLDER_NOISY,
+               EXPERIMENT_FOLDER_ABSLT, EXPERIMENT_FOLDER_ANGLE]:
     if not os.path.exists(folder):
         os.makedirs(folder)
 
@@ -29,16 +15,16 @@ clean_to_noisy = {}
 audio_to_abslt = {}
 audio_to_angle = {}
 
-for clean_path in glob(clean_audio_folder_slash + "*"):
+for clean_path in glob(CLEAN_AUDIO_FOLDER_SLASH + "*"):
     if not is_valid_audio_file(clean_path):
         continue
     y_clean = file_to_y(clean_path)
     clean_name = filename_from_path(clean_path)
 
-    clean_copy_path = experiment_clean_folder + clean_name + ".wav"
+    clean_copy_path = EXPERIMENT_FOLDER_CLEAN + clean_name + ".wav"
 
-    abslt_path = experiment_abslt_folder + clean_name + ".pkl"
-    angle_path = experiment_angle_folder + clean_name + ".pkl"
+    abslt_path = EXPERIMENT_FOLDER_ABSLT + clean_name + ".pkl"
+    angle_path = EXPERIMENT_FOLDER_ANGLE + clean_name + ".pkl"
 
     clean_to_noisy[clean_copy_path] = []
 
@@ -52,7 +38,7 @@ for clean_path in glob(clean_audio_folder_slash + "*"):
 
     y_to_file(y_clean, clean_copy_path)
 
-    for noise_path in glob(noises_folder_slash + "*"):
+    for noise_path in glob(NOISES_FOLDER_SLASH + "*"):
         if not is_valid_audio_file(noise_path):
             continue
         y_noise = file_to_y(noise_path)
@@ -72,10 +58,10 @@ for clean_path in glob(clean_audio_folder_slash + "*"):
                 str(round(100 * noise_db_multiplier))
             ])
 
-            abslt_path = experiment_abslt_folder + noisy_name + ".pkl"
-            angle_path = experiment_angle_folder + noisy_name + ".pkl"
+            abslt_path = EXPERIMENT_FOLDER_ABSLT + noisy_name + ".pkl"
+            angle_path = EXPERIMENT_FOLDER_ANGLE + noisy_name + ".pkl"
 
-            generated_noisy_file_path = experiment_noisy_folder +\
+            generated_noisy_file_path = EXPERIMENT_FOLDER_NOISY +\
                 noisy_name + ".wav"
 
             noisy_to_clean[generated_noisy_file_path] = clean_copy_path
@@ -98,4 +84,4 @@ filenames = ["noisy_to_clean", "clean_to_noisy",
              "audio_to_abslt", "audio_to_angle"]
 
 for obj, filename in zip(objs, filenames):
-    json_dump(obj, experiment_folder + filename + ".json")
+    json_dump(obj, EXPERIMENT_FOLDER + filename + ".json")
