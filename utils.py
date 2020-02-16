@@ -3,7 +3,6 @@ import json
 
 import numpy as np
 
-from pypesq import pesq as pesq_fn
 import soundfile as sf
 import librosa as lr
 
@@ -73,10 +72,3 @@ def pkl_load(path):
 
 def pkl_dump(obj, path):
     pickle.dump(obj, open(path, "wb"))
-
-
-def pesq(y_ref, y_deg):
-    if PESQ_SAMPLING_RATE != SAMPLING_RATE:
-        y_ref = lr.core.resample(y_ref, SAMPLING_RATE, PESQ_SAMPLING_RATE)
-        y_deg = lr.core.resample(y_deg, SAMPLING_RATE, PESQ_SAMPLING_RATE)
-    return pesq_fn(y_ref, y_deg, PESQ_SAMPLING_RATE)
