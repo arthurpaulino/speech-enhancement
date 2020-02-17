@@ -6,7 +6,8 @@ from utils import *
 
 
 for folder in [EXPERIMENT_FOLDER_CLEAN, EXPERIMENT_FOLDER_NOISY,
-               EXPERIMENT_FOLDER_ABSLT, EXPERIMENT_FOLDER_ANGLE]:
+               EXPERIMENT_FOLDER_ABSLT, EXPERIMENT_FOLDER_ANGLE,
+               EXPERIMENT_FOLDER_ABSLT_ENG, EXPERIMENT_FOLDER_MAPS]:
     if not os.path.exists(folder):
         os.makedirs(folder)
 
@@ -14,6 +15,7 @@ noisy_to_clean = {}
 clean_to_noisy = {}
 audio_to_abslt = {}
 audio_to_angle = {}
+audio_to_abslt_eng = {}
 
 for clean_path in glob(CLEAN_AUDIO_FOLDER_SLASH + "*"):
     if not is_valid_audio_file(clean_path):
@@ -61,6 +63,8 @@ for clean_path in glob(CLEAN_AUDIO_FOLDER_SLASH + "*"):
             abslt_path = EXPERIMENT_FOLDER_ABSLT + noisy_name + ".pkl"
             angle_path = EXPERIMENT_FOLDER_ANGLE + noisy_name + ".pkl"
 
+            abslt_eng_path = EXPERIMENT_FOLDER_ABSLT_ENG + noisy_name + ".pkl"
+
             generated_noisy_file_path = EXPERIMENT_FOLDER_NOISY +\
                 noisy_name + ".wav"
 
@@ -68,20 +72,27 @@ for clean_path in glob(CLEAN_AUDIO_FOLDER_SLASH + "*"):
             clean_to_noisy[clean_copy_path].append(generated_noisy_file_path)
 
             abslt, angle = y_to_abslt_angle(y_mixed)
+            abslt_eng = eng_abslt(abslt)
 
             audio_to_abslt[generated_noisy_file_path] = abslt_path
             audio_to_angle[generated_noisy_file_path] = angle_path
 
+            audio_to_abslt_eng[generated_noisy_file_path] = abslt_eng_path
+
             pkl_dump(abslt, abslt_path)
             pkl_dump(angle, angle_path)
+
+            pkl_dump(abslt_eng, abslt_eng_path)
 
             y_to_file(y_mixed, generated_noisy_file_path)
 
 objs = [noisy_to_clean, clean_to_noisy,
-        audio_to_abslt, audio_to_angle]
+        audio_to_abslt, audio_to_angle,
+        audio_to_abslt_eng]
 
 filenames = ["noisy_to_clean", "clean_to_noisy",
-             "audio_to_abslt", "audio_to_angle"]
+             "audio_to_abslt", "audio_to_angle",
+             "audio_to_abslt_eng"]
 
 for obj, filename in zip(objs, filenames):
-    json_dump(obj, EXPERIMENT_FOLDER + filename + ".json")
+    json_dump(obj, EXPERIMENT_FOLDER_MAPS + filename + ".json")

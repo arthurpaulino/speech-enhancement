@@ -7,19 +7,28 @@ from utils import *
 
 seed(RANDOM_SEED)
 
-clean_to_noisy = json_load(
-    "data/generated/" + EXPERIMENT_NAME + "/clean_to_noisy.json"
+clean_to_noisy = json_load(EXPERIMENT_FOLDER_MAPS + "clean_to_noisy.json")
+audio_to_abslt = json_load(EXPERIMENT_FOLDER_MAPS + "audio_to_abslt.json")
+audio_to_abslt_eng = json_load(
+    EXPERIMENT_FOLDER_MAPS + "audio_to_abslt_eng.json"
 )
 
-noisy_to_clean = json_load(
-    "data/generated/" + EXPERIMENT_NAME + "/noisy_to_clean.json"
-)
+def build_X_Y_wrapper(clean_list):
+    return build_X_Y(clean_list, clean_to_noisy,
+                     audio_to_abslt, audio_to_abslt_eng)
 
 clean_list = list(clean_to_noisy)
 
-split = round(VALIDATION_RATIO * len(clean_list))
+split = round((1 - VALIDATION_RATIO) * len(clean_list))
 
 for i_experiment in range(N_EXPERIMENTS):
     shuffle(clean_list)
-    valid_clean = clean_list[:split]
-    train_clean = clean_list[split:]
+    train_clean = clean_list[:split]
+    valid_clean = clean_list[split:]
+
+    X_train, Y_train = build_X_Y_wrapper(train_clean)
+    X_valid, Y_valid = build_X_Y_wrapper(valid_clean)
+
+    print(X_train.shape, Y_train.shape)
+    print(X_valid.shape, Y_valid.shape)
+    break

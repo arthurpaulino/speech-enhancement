@@ -1,6 +1,7 @@
 import pickle
 import json
 
+import pandas as pd
 import numpy as np
 
 import soundfile as sf
@@ -17,11 +18,15 @@ NOISES_FOLDER_SLASH = NOISES_FOLDER + "/"\
 
 EXPERIMENT_FOLDER = "data/generated/" + EXPERIMENT_NAME + "/"
 
+EXPERIMENT_FOLDER_MAPS = EXPERIMENT_FOLDER + "maps/"
+
 EXPERIMENT_FOLDER_CLEAN = EXPERIMENT_FOLDER + "clean/"
 EXPERIMENT_FOLDER_NOISY = EXPERIMENT_FOLDER + "noisy/"
 
 EXPERIMENT_FOLDER_ABSLT = EXPERIMENT_FOLDER + "abslt/"
 EXPERIMENT_FOLDER_ANGLE = EXPERIMENT_FOLDER + "angle/"
+
+EXPERIMENT_FOLDER_ABSLT_ENG = EXPERIMENT_FOLDER + "abslt_eng/"
 
 
 _n_fft = round(SAMPLING_RATE * FFT_MS / 1000)
@@ -44,6 +49,22 @@ def file_to_y(path):
 
 def y_to_file(y, path):
     sf.write(path, y, SAMPLING_RATE)
+
+
+def json_load(path):
+    return json.load(open(path, "r"))
+
+
+def json_dump(obj, path):
+    json.dump(obj, open(path, "w"))
+
+
+def pkl_load(path):
+    return pickle.load(open(path, "rb"))
+
+
+def pkl_dump(obj, path):
+    pickle.dump(obj, open(path, "wb"))
 
 
 def filled_sum(y_1, y_2):
@@ -73,17 +94,34 @@ def abslt_angle_to_y(abslt, angle):
     return lr.core.istft(D.T, hop_length=_hop_length)
 
 
-def json_load(path):
-    return json.load(open(path, "r"))
+def eng_abslt(abslt):
+    abslt_df = pd.DataFrame(abslt)
+
+    after_df = pd.concat(
+        [abslt_df.shift(-1 * (i + 1)) for i in range(LOOK_AFTER)],
+        axis=1
+    )
+
+    back_df = pd.concat(
+        [abslt_df.shift(i + 1) for i in range(LOOK_BACK)],
+        axis=1
+    )
+
+    abslt_eng = pd.concat([abslt_df, after_df, back_df], axis=1)
+
+    return abslt_eng.fillna(0).values
 
 
-def json_dump(obj, path):
-    json.dump(obj, open(path, "w"))
-
-
-def pkl_load(path):
-    return pickle.load(open(path, "rb"))
-
-
-def pkl_dump(obj, path):
-    pickle.dump(obj, open(path, "wb"))
+def build_X_Y(clean_list, clean_to_noisy, audio_to_abslt, audio_to_abslt_eng):
+    X, Y = None, None
+    for clean in clean_list:
+        clean_matrix = pkl_load(audio_to_abslt[clean])
+        for noisy in clean_to_noisy[clean]:
+            noisy_matrix = pkl_load(audio_to_abslt_eng[noisy])
+            if X is None:
+                X = noisy_matrix
+                Y = clean_matrix
+            else:
+                X = np.concatenate([X, noisy_matrix], axis=0)
+                Y = np.concatenate([Y, clean_matrix], axis=0)
+    return X, Y
