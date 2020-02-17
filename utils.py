@@ -128,5 +128,6 @@ def build_X_Y(clean_list, clean_to_noisy, audio_to_abslt, audio_to_abslt_eng):
 
 
 def validate(X_train, Y_train, X_valid, Y_valid):
+    # todo
     print(X_train.shape, Y_train.shape)
     print(X_valid.shape, Y_valid.shape)
