@@ -7,11 +7,11 @@ from utils import *
 
 seed(RANDOM_SEED)
 
-clean_to_noisy = json_load(EXPERIMENT_FOLDER_MAPS + "clean_to_noisy.json")
-audio_to_abslt = json_load(EXPERIMENT_FOLDER_MAPS + "audio_to_abslt.json")
-audio_to_abslt_eng = json_load(
-    EXPERIMENT_FOLDER_MAPS + "audio_to_abslt_eng.json"
-)
+efm = EXPERIMENT_FOLDER_MAPS
+
+clean_to_noisy = json_load(efm + "clean_to_noisy.json")
+audio_to_abslt = json_load(efm + "audio_to_abslt.json")
+audio_to_abslt_eng = json_load(efm + "audio_to_abslt_eng.json")
 
 def build_X_Y_wrapper(clean_list):
     return build_X_Y(clean_list, clean_to_noisy,
@@ -29,6 +29,5 @@ for i_experiment in range(N_EXPERIMENTS):
     X_train, Y_train = build_X_Y_wrapper(train_clean)
     X_valid, Y_valid = build_X_Y_wrapper(valid_clean)
 
-    print(X_train.shape, Y_train.shape)
-    print(X_valid.shape, Y_valid.shape)
+    validate(X_train, Y_train, X_valid, Y_valid)
     break
