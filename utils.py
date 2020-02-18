@@ -99,25 +99,36 @@ def abslt_angle_to_y(abslt, angle):
 def eng_abslt(abslt):
     abslt_df = pd.DataFrame(abslt)
 
-    after_df = pd.concat(
-        [abslt_df.shift(-1 * (i + 1)) for i in range(LOOK_AFTER)],
-        axis=1
-    )
+    to_concat = [abslt_df]
 
-    back_df = pd.concat(
-        [abslt_df.shift(i + 1) for i in range(LOOK_BACK)],
-        axis=1
-    )
+    if LOOK_BACK > 0:
+        back_df = pd.concat(
+            [abslt_df.shift(i + 1) for i in range(LOOK_BACK)],
+            axis=1
+        )
+        to_concat.append(back_df)
 
-    abslt_eng = pd.concat([abslt_df, after_df, back_df], axis=1)
+    if LOOK_AFTER > 0:
+        after_df = pd.concat(
+            [abslt_df.shift(-1 * (i + 1)) for i in range(LOOK_AFTER)],
+            axis=1
+        )
+        to_concat.append(after_df)
+
+    if LOOK_BACK > 0 or LOOK_AFTER > 0:
+        abslt_eng = pd.concat(to_concat, axis=1)
+    else:
+        abslt_eng = abslt_df
 
     return abslt_eng.fillna(0).values
 
 
 def build_X_Y(clean_list, clean_to_noisy, audio_to_abslt, audio_to_abslt_eng):
     X, Y = None, None
+    lengths = []
     for clean in clean_list:
         clean_matrix = pkl_load(audio_to_abslt[clean])
+        lengths.append(clean_matrix.shape[0])
         for noisy in clean_to_noisy[clean]:
             noisy_matrix = pkl_load(audio_to_abslt_eng[noisy])
             if X is None:
@@ -126,4 +137,16 @@ def build_X_Y(clean_list, clean_to_noisy, audio_to_abslt, audio_to_abslt_eng):
             else:
                 X = np.concatenate([X, noisy_matrix], axis=0)
                 Y = np.concatenate([Y, clean_matrix], axis=0)
-    return X, Y
+    return X, Y, lengths
+
+
+def extract_ys(Y, lengths, clean_list, clean_to_noisy, audio_to_angle):
+    y_list = []
+    cumulative_length = 0
+    for clean, length in zip(clean_list, lengths):
+        for noisy in clean_to_noisy[clean]:
+            abslt = Y[cumulative_length : cumulative_length + length, :]
+            angle = pkl_load(audio_to_angle[noisy])
+            y_list.append(abslt_angle_to_y(abslt, angle))
+            cumulative_length += length
+    return y_list

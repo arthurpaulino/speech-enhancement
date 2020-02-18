@@ -8,7 +8,7 @@ used, **Python 3.6 is required**.
 * `parameters.py` contains the definitions for the data processing and the
 experiments. This is the file to tweak.
 
-* `setup_files.py` first creates the proper structure of directories for the
+* `process_data.py` first creates the proper structure of directories for the
 experiments inside a `data/generated` folder:
 
   ```
@@ -43,6 +43,6 @@ experiments inside a `data/generated` folder:
 the data and parameters provided.
 
 * `utils.py` and `neural_networks.py` contain definitions of auxiliary functions
-and variables in order to facilitate the implementation of the other scripts
+and variables that aim to facilitate the implementation of the other scripts
 above. `utils.py` has more general definitions and `neural_networks.py` has
 definitions related to NN models.

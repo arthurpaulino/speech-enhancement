@@ -15,6 +15,7 @@ efm = EXPERIMENT_FOLDER_MAPS
 clean_to_noisy = json_load(efm + "clean_to_noisy.json")
 audio_to_abslt = json_load(efm + "audio_to_abslt.json")
 audio_to_abslt_eng = json_load(efm + "audio_to_abslt_eng.json")
+audio_to_angle = json_load(efm + "audio_to_angle.json")
 
 def build_X_Y_wrapper(clean_list):
     return build_X_Y(clean_list, clean_to_noisy,
@@ -30,7 +31,10 @@ for i_experiment in range(N_EXPERIMENTS):
     train_clean = clean_list[:split]
     valid_clean = clean_list[split:]
 
-    X_train, Y_train = build_X_Y_wrapper(train_clean)
-    X_valid, Y_valid = build_X_Y_wrapper(valid_clean)
+    X_train, Y_train, train_lengths = build_X_Y_wrapper(train_clean)
+    X_valid, Y_valid, valid_lengths = build_X_Y_wrapper(valid_clean)
 
-    validate(X_train, Y_train, X_valid, Y_valid)
+    Y_model = train_and_predict(X_train, Y_train, X_valid, Y_valid)
+
+    ys = extract_ys(Y_model, valid_lengths, valid_clean,
+                    clean_to_noisy, audio_to_angle)
