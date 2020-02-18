@@ -42,5 +42,7 @@ experiments inside a `data/generated` folder:
 * `run_experiments.py` performs the experiments to validate models created with
 the data and parameters provided.
 
-* `utils.py` contains definitions of auxiliary functions and variables in order
-to facilitate the implementation of the other scripts above.
+* `utils.py` and `neural_networks.py` contain definitions of auxiliary functions
+and variables in order to facilitate the implementation of the other scripts
+above. `utils.py` has more general definitions and `neural_networks.py` has
+definitions related to NN models.

@@ -1,11 +1,14 @@
+from numpy.random import seed as nseed
 from random import shuffle, seed
 import json
 
+from neural_networks import *
 from parameters import *
 from utils import *
 
 
 seed(RANDOM_SEED)
+nseed(RANDOM_SEED)
 
 efm = EXPERIMENT_FOLDER_MAPS
 
@@ -22,6 +25,7 @@ clean_list = list(clean_to_noisy)
 split = round((1 - VALIDATION_RATIO) * len(clean_list))
 
 for i_experiment in range(N_EXPERIMENTS):
+    print("############## EXPERIMENT {}".format(i_experiment + 1))
     shuffle(clean_list)
     train_clean = clean_list[:split]
     valid_clean = clean_list[split:]
@@ -30,4 +34,3 @@ for i_experiment in range(N_EXPERIMENTS):
     X_valid, Y_valid = build_X_Y_wrapper(valid_clean)
 
     validate(X_train, Y_train, X_valid, Y_valid)
-    break
