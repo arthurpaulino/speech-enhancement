@@ -7,6 +7,8 @@ import numpy as np
 import soundfile as sf
 import librosa as lr
 
+from pesq import pesq as pesq_fn
+
 from parameters import *
 
 
@@ -150,3 +152,22 @@ def extract_ys(Y_model, lengths, clean_list, clean_to_noisy, audio_to_angle):
             ys_model[noisy] = abslt_angle_to_y(abslt, angle)
             cumulative_length += length
     return ys_model
+
+
+def validate_pesq():
+    if PESQ_MODE not in ["nb", "wb"]:
+        print("Invalid PESQ mode")
+        exit()
+    if PESQ_SAMPLING_RATE not in [8000, 16000]:
+        print("Invalid PESQ sampling rate")
+        exit()
+    if PESQ_SAMPLING_RATE == 8000 and PESQ_MODE != "nb":
+        print("Invalid PESQ sampling rate for 'nb' mode")
+        exit()
+
+
+def pesq(y_truth, y_valid):
+    if SAMPLING_RATE != PESQ_SAMPLING_RATE:
+        y_truth = lr.core.resample(y_truth, SAMPLING_RATE, PESQ_SAMPLING_RATE)
+        y_valid = lr.core.resample(y_valid, SAMPLING_RATE, PESQ_SAMPLING_RATE)
+    return pesq_fn(PESQ_SAMPLING_RATE, y_truth, y_valid, PESQ_MODE)

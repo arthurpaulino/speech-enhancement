@@ -8,7 +8,7 @@ from neural_networks import *
 from parameters import *
 from utils import *
 
-
+validate_pesq()
 seed(RANDOM_SEED)
 
 efm = EXPERIMENT_FOLDER_MAPS
@@ -61,7 +61,10 @@ for (train_indexes, valid_indexes), i_fold in zip(splits, range(N_FOLDS)):
     ys_model = extract_ys_wrapper(Y_model, valid_lengths, valid_clean)
 
     for noisy in ys_model:
-        y_cleaned = ys_model[noisy]
+        y_noisy = file_to_y(noisy)
         y_clean = file_to_y(noisy_to_clean[noisy])
+        y_cleaned = ys_model[noisy]
         filename = filename_from_path(noisy)
+        print(filename)
+        print(" ", pesq(y_clean, y_noisy), "-->", pesq(y_clean, y_cleaned))
         y_to_file(y_cleaned, efc + filename + ".wav")
