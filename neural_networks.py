@@ -4,6 +4,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 from keras.callbacks import EarlyStopping, ModelCheckpoint
 from keras.layers import Dense, Dropout
 from keras.models import Sequential
+from numpy.random import shuffle
 
 from sklearn.preprocessing import MinMaxScaler
 
@@ -40,27 +41,32 @@ def build_nn(input_dim, output_dim):
     return nn
 
 
-def train_and_predict(X_train, Y_train, X_valid, Y_valid):
-    input_len, input_dim = X_train.shape
-    output_dim = Y_train.shape[1]
+def train_and_predict(X_train_t, Y_train_t,
+                      X_train_v, Y_train_v,
+                      X_valid, Y_valid, seed):
+    input_len, input_dim = X_train_t.shape
+    output_dim = Y_train_t.shape[1]
 
     X_scaler, Y_scaler = MinMaxScaler(), MinMaxScaler()
 
-    X_train_scaled = X_scaler.fit_transform(X_train)
-    Y_train_scaled = Y_scaler.fit_transform(Y_train)
+    X_train_t_scaled = X_scaler.fit_transform(X_train_t)
+    Y_train_t_scaled = Y_scaler.fit_transform(Y_train_t)
+
+    X_train_v_scaled = X_scaler.transform(X_train_v)
+    Y_train_v_scaled = Y_scaler.transform(Y_train_v)
 
     X_valid_scaled = X_scaler.transform(X_valid)
     Y_valid_scaled = Y_scaler.transform(Y_valid)
 
     nn = build_nn(input_dim, output_dim)
 
-    nn.fit(X_train_scaled,
-           Y_train_scaled,
-           epochs=1_000_000, # going to use early stop instead
-           callbacks=callbacks,
-           verbose=VERBOSE,
+    nn.fit(X_train_t_scaled,
+           Y_train_t_scaled,
            batch_size=round(BATCH_SIZE_RATIO * input_len),
-           validation_data=(X_valid_scaled, Y_valid_scaled))
+           epochs=1_000_000, # going to use early stop instead
+           verbose=VERBOSE,
+           callbacks=callbacks,
+           validation_data=(X_train_v_scaled, Y_train_v_scaled))
 
     Y_model_scaled = nn.predict(X_valid_scaled)
     return Y_scaler.inverse_transform(Y_model_scaled)

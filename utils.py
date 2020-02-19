@@ -140,13 +140,13 @@ def build_X_Y(clean_list, clean_to_noisy, audio_to_abslt, audio_to_abslt_eng):
     return X, Y, lengths
 
 
-def extract_ys(Y, lengths, clean_list, clean_to_noisy, audio_to_angle):
-    y_list = []
+def extract_ys(Y_model, lengths, clean_list, clean_to_noisy, audio_to_angle):
+    ys_model = {}
     cumulative_length = 0
     for clean, length in zip(clean_list, lengths):
         for noisy in clean_to_noisy[clean]:
-            abslt = Y[cumulative_length : cumulative_length + length, :]
+            abslt = Y_model[cumulative_length : cumulative_length + length, :]
             angle = pkl_load(audio_to_angle[noisy])
-            y_list.append(abslt_angle_to_y(abslt, angle))
+            ys_model[noisy] = abslt_angle_to_y(abslt, angle)
             cumulative_length += length
-    return y_list
+    return ys_model
