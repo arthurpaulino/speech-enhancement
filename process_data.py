@@ -1,6 +1,8 @@
 from glob import glob
 import os
 
+from progress.bar import Bar
+
 from parameters import *
 from utils import *
 
@@ -17,7 +19,16 @@ audio_to_abslt = {}
 audio_to_angle = {}
 audio_to_abslt_eng = {}
 
-for clean_path in glob(CLEAN_AUDIO_FOLDER_SLASH + "*"):
+clean_path_list = glob(CLEAN_AUDIO_FOLDER_SLASH + "*")
+noisy_path_list = glob(NOISES_FOLDER_SLASH + "*")
+
+n_clean = len(clean_path_list)
+n_noisy = len(noisy_path_list)
+n_noises = len(NOISE_DB_MULTIPLIERS)
+
+bar = Bar("Progress", max=n_clean * n_noisy * n_noises)
+
+for clean_path in clean_path_list:
     if not is_valid_audio_file(clean_path):
         continue
     y_clean = file_to_y(clean_path)
@@ -40,7 +51,7 @@ for clean_path in glob(CLEAN_AUDIO_FOLDER_SLASH + "*"):
 
     y_to_file(y_clean, clean_copy_path)
 
-    for noise_path in glob(NOISES_FOLDER_SLASH + "*"):
+    for noise_path in noisy_path_list:
         if not is_valid_audio_file(noise_path):
             continue
         y_noise = file_to_y(noise_path)
@@ -85,6 +96,10 @@ for clean_path in glob(CLEAN_AUDIO_FOLDER_SLASH + "*"):
             pkl_dump(abslt_eng, abslt_eng_path)
 
             y_to_file(y_mixed, generated_noisy_file_path)
+
+            bar.next()
+
+bar.finish()
 
 objs = [noisy_to_clean, clean_to_noisy,
         audio_to_abslt, audio_to_angle,

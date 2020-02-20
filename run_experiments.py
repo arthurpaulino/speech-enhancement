@@ -1,8 +1,10 @@
+from time import time
 import json
 import os
 
 from sklearn.model_selection import KFold
 from numpy.random import seed
+import pandas as pd
 
 from neural_networks import *
 from parameters import *
@@ -13,6 +15,7 @@ seed(RANDOM_SEED)
 
 efm = EXPERIMENT_FOLDER_MAPS
 efc = EXPERIMENT_FOLDER + "cleaned/"
+summary_path = EXPERIMENT_FOLDER + "summary.csv"
 
 if not os.path.exists(efc):
     os.makedirs(efc)
@@ -20,8 +23,8 @@ if not os.path.exists(efc):
 clean_to_noisy = json_load(efm + "clean_to_noisy.json")
 noisy_to_clean = json_load(efm + "noisy_to_clean.json")
 audio_to_abslt = json_load(efm + "audio_to_abslt.json")
-audio_to_abslt_eng = json_load(efm + "audio_to_abslt_eng.json")
 audio_to_angle = json_load(efm + "audio_to_angle.json")
+audio_to_abslt_eng = json_load(efm + "audio_to_abslt_eng.json")
 
 
 def build_X_Y_wrapper(clean_list):
@@ -39,8 +42,11 @@ clean_list = list(clean_to_noisy)
 kf = KFold(n_splits=N_FOLDS, shuffle=True, random_state=RANDOM_SEED)
 splits = kf.split(clean_list)
 
+summary = []
+
 for (train_indexes, valid_indexes), i_fold in zip(splits, range(N_FOLDS)):
-    print("############# FOLD {}/{} ##############".format(i_fold + 1, N_FOLDS))
+    start = time()
+
     train_clean = [clean_list[i] for i in train_indexes]
     valid_clean = [clean_list[i] for i in valid_indexes]
 
@@ -64,7 +70,39 @@ for (train_indexes, valid_indexes), i_fold in zip(splits, range(N_FOLDS)):
         y_noisy = file_to_y(noisy)
         y_clean = file_to_y(noisy_to_clean[noisy])
         y_cleaned = ys_model[noisy]
-        filename = filename_from_path(noisy)
-        print(filename)
-        print(" ", pesq(y_clean, y_noisy), "-->", pesq(y_clean, y_cleaned))
-        y_to_file(y_cleaned, efc + filename + ".wav")
+
+        noisy_filename = filename_from_path(noisy)
+        filename, noise_name, noise_multiplier = noisy_filename.split("+")
+
+        noisy_pesq = pesq(y_clean, y_noisy)
+        cleaned_pesq = pesq(y_clean, y_cleaned)
+
+        summary.append({
+            "noisy_filename": noisy_filename,
+            "filename": filename,
+            "duration": y_noisy.shape[0] / SAMPLING_RATE,
+            "noise_name": noise_name,
+            "noise_multiplier": int(noise_multiplier),
+            "noisy_pesq": noisy_pesq,
+            "cleaned_pesq": cleaned_pesq,
+            "improved_pesq": cleaned_pesq - noisy_pesq,
+            "fold": i_fold + 1
+        })
+
+        y_to_file(y_cleaned, efc + noisy_filename + ".wav")
+
+    print("fold {}/{}: {}s".format(
+        i_fold + 1,
+        N_FOLDS,
+        round(time() - start, 2)
+    ))
+
+columns = ["noisy_filename", "filename", "duration",
+           "noise_name", "noise_multiplier", "noisy_pesq",
+           "cleaned_pesq", "improved_pesq", "fold"]
+
+summary = pd.DataFrame(summary)[columns]
+
+print(summary["improved_pesq"].mean() - summary["improved_pesq"].std() / 2)
+
+summary.to_csv(summary_path, index=False)

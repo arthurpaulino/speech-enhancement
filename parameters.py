@@ -23,7 +23,7 @@ VALIDATION_RATIO = 0.2
 
 ########## neural networks ##########
 # size multiplier, activation function and dropout rate
-LAYERS = [(3, "relu", 0.2)]
+LAYERS = [(4, "relu", 0.2)]
 
 BATCH_SIZE_RATIO = 0.01
 VERBOSE = 0
