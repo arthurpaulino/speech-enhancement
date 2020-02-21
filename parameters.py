@@ -17,13 +17,13 @@ PESQ_SAMPLING_RATE = 8000 # 8k or 16k
 PESQ_MODE = "nb" # "nb" or "wb"
 
 ########## experiments ##########
-RANDOM_SEED = 42
-N_FOLDS = 3
-VALIDATION_RATIO = 0.2
+RANDOM_SEED = 43
+N_FOLDS = 2
+INNER_VALIDATION = 0.5 # (int > 1) or (0 < float < 1)
 
 ########## neural networks ##########
 # size multiplier, activation function and dropout rate
-LAYERS = [(4, "relu", 0.2)]
+LAYERS = [(3, "relu", 0.2)]
 
 BATCH_SIZE_RATIO = 0.01
 VERBOSE = 0

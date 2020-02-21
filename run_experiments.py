@@ -45,24 +45,66 @@ splits = kf.split(clean_list)
 summary = []
 
 for (train_indexes, valid_indexes), i_fold in zip(splits, range(N_FOLDS)):
+    print("\n┌ Fold {}/{}".format(i_fold + 1, N_FOLDS))
     start = time()
 
     train_clean = [clean_list[i] for i in train_indexes]
     valid_clean = [clean_list[i] for i in valid_indexes]
 
-    split = round((1 - VALIDATION_RATIO) * len(train_clean))
-
-    train_clean_t = train_clean[:split]
-    train_clean_v = train_clean[split:]
-
-    X_train_t, Y_train_t, _ = build_X_Y_wrapper(train_clean_t)
-    X_train_v, Y_train_v, _ = build_X_Y_wrapper(train_clean_v)
     X_valid, Y_valid, valid_lengths = build_X_Y_wrapper(valid_clean)
 
-    Y_model = train_and_predict(X_train_t, Y_train_t,
-                                X_train_v, Y_train_v,
-                                X_valid, Y_valid,
-                                i_fold)
+    if 0 < INNER_VALIDATION and INNER_VALIDATION < 1:
+        split = round((1 - INNER_VALIDATION) * len(train_clean))
+
+        train_clean_t = train_clean[:split]
+        train_clean_v = train_clean[split:]
+
+        X_train_t, Y_train_t, _ = build_X_Y_wrapper(train_clean_t)
+        X_train_v, Y_train_v, _ = build_X_Y_wrapper(train_clean_v)
+
+        Y_model = train_and_predict(X_train_t, Y_train_t,
+                                    X_train_v, Y_train_v,
+                                    X_valid, Y_valid,
+                                    i_fold)
+    elif INNER_VALIDATION > 1 and isinstance(INNER_VALIDATION, int):
+        inner_kf = KFold(
+            n_splits=INNER_VALIDATION,
+            shuffle=True,
+            random_state=RANDOM_SEED
+        )
+
+        inner_splits = inner_kf.split(train_clean)
+
+        iter = zip(inner_splits, range(INNER_VALIDATION))
+
+        Y_model = None
+
+        for (inner_train_indexes, inner_valid_indexes), inner_i_fold in iter:
+            inner_start = time()
+
+            train_clean_t = [train_clean[i] for i in inner_train_indexes]
+            train_clean_v = [train_clean[i] for i in inner_valid_indexes]
+
+            X_train_t, Y_train_t, _ = build_X_Y_wrapper(train_clean_t)
+            X_train_v, Y_train_v, _ = build_X_Y_wrapper(train_clean_v)
+
+            Y_model_iter = train_and_predict(X_train_t, Y_train_t,
+                                             X_train_v, Y_train_v,
+                                             X_valid, Y_valid,
+                                             inner_i_fold) / INNER_VALIDATION
+            if Y_model is None:
+                Y_model = Y_model_iter
+            else:
+                Y_model += Y_model_iter
+
+            print("├ Inner fold {}/{}: {}s".format(
+                inner_i_fold + 1,
+                INNER_VALIDATION,
+                round(time() - inner_start, 2)
+            ))
+    else:
+        print("Invalid parameter: INNER_VALIDATION")
+        exit()
 
     ys_model = extract_ys_wrapper(Y_model, valid_lengths, valid_clean)
 
@@ -91,11 +133,7 @@ for (train_indexes, valid_indexes), i_fold in zip(splits, range(N_FOLDS)):
 
         y_to_file(y_cleaned, efc + noisy_filename + ".wav")
 
-    print("fold {}/{}: {}s".format(
-        i_fold + 1,
-        N_FOLDS,
-        round(time() - start, 2)
-    ))
+    print("└ {}s".format(round(time() - start, 2)))
 
 columns = ["noisy_filename", "filename", "duration",
            "noise_name", "noise_multiplier", "noisy_pesq",
@@ -103,6 +141,11 @@ columns = ["noisy_filename", "filename", "duration",
 
 summary = pd.DataFrame(summary)[columns]
 
-print(summary["improved_pesq"].mean() - summary["improved_pesq"].std() / 2)
+improved_pesq_mean = summary["improved_pesq"].mean()
+improved_pesq_std = summary["improved_pesq"].std()
+
+print("\nMean PESQ improvement:  ", improved_pesq_mean)
+print("Stddev PESQ improvement:", improved_pesq_std)
+print("Mean - stddev:          ", improved_pesq_mean - improved_pesq_std, "\n")
 
 summary.to_csv(summary_path, index=False)

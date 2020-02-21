@@ -6,7 +6,7 @@ used, **Python 3.6 is required**.
 ## Main scripts
 
 * `parameters.py` contains the definitions for the data processing and the
-experiments. This is the file to tweak.
+experiments. **This is the file to tweak**.
 
 * `process_data.py` first creates the proper structure of directories for the
 experiments inside a `data/generated` folder:
