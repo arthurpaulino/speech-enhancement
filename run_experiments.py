@@ -97,7 +97,7 @@ for (train_indexes, valid_indexes), i_fold in zip(splits, range(N_FOLDS)):
             else:
                 Y_model += Y_model_iter
 
-            print("├ Inner fold {}/{}: {}s".format(
+            print("├─ Inner fold {}/{}: {}s".format(
                 inner_i_fold + 1,
                 INNER_VALIDATION,
                 round(time() - inner_start, 2)
@@ -133,7 +133,7 @@ for (train_indexes, valid_indexes), i_fold in zip(splits, range(N_FOLDS)):
 
         y_to_file(y_cleaned, efc + noisy_filename + ".wav")
 
-    print("└ {}s".format(round(time() - start, 2)))
+    print("└─ {}s".format(round(time() - start, 2)))
 
 columns = ["noisy_filename", "filename", "duration",
            "noise_name", "noise_multiplier", "noisy_pesq",
