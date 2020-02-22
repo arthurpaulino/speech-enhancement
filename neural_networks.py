@@ -12,11 +12,7 @@ from parameters import *
 from utils import *
 
 
-model_path = EXPERIMENT_FOLDER + "nn.h5"
-
-callbacks = [EarlyStopping(monitor="val_loss", patience=5),
-             ModelCheckpoint(filepath=model_path, monitor="val_loss",
-                             save_best_only=True)]
+early_stop = EarlyStopping(monitor="val_loss", patience=PATIENCE)
 
 
 def build_nn(input_dim, output_dim):
@@ -43,7 +39,8 @@ def build_nn(input_dim, output_dim):
 
 def train_and_predict(X_train_t, Y_train_t,
                       X_train_v, Y_train_v,
-                      X_valid, Y_valid, seed):
+                      X_valid, Y_valid,
+                      seed, model_id):
     input_len, input_dim = X_train_t.shape
     output_dim = Y_train_t.shape[1]
 
@@ -59,6 +56,15 @@ def train_and_predict(X_train_t, Y_train_t,
     Y_valid_scaled = Y_scaler.transform(Y_valid)
 
     nn = build_nn(input_dim, output_dim)
+
+    callbacks = [
+        early_stop,
+        ModelCheckpoint(
+            filepath=EXPERIMENT_FOLDER + "models/" + model_id + ".h5",
+            monitor="val_loss",
+            save_best_only=True
+        )
+    ]
 
     nn.fit(X_train_t_scaled,
            Y_train_t_scaled,

@@ -23,7 +23,8 @@ INNER_VALIDATION = 0.5 # (int > 1) or (0 < float < 1)
 
 ########## neural networks ##########
 # size multiplier, activation function and dropout rate
-LAYERS = [(3, "relu", 0.2)]
+LAYERS = [(2, "relu", 0.2)]
 
+PATIENCE = 5
 BATCH_SIZE_RATIO = 0.01
 VERBOSE = 0

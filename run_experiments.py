@@ -1,4 +1,5 @@
 from time import time
+import shutil
 import json
 import os
 
@@ -13,18 +14,21 @@ from utils import *
 validate_pesq()
 seed(RANDOM_SEED)
 
-efm = EXPERIMENT_FOLDER_MAPS
 efc = EXPERIMENT_FOLDER + "cleaned/"
-summary_path = EXPERIMENT_FOLDER + "summary.csv"
+efm = EXPERIMENT_FOLDER + "models/"
 
-if not os.path.exists(efc):
-    os.makedirs(efc)
+for folder in efc, efm:
+    if os.path.exists(folder):
+        shutil.rmtree(folder)
+    os.makedirs(folder)
 
-clean_to_noisy = json_load(efm + "clean_to_noisy.json")
-noisy_to_clean = json_load(efm + "noisy_to_clean.json")
-audio_to_abslt = json_load(efm + "audio_to_abslt.json")
-audio_to_angle = json_load(efm + "audio_to_angle.json")
-audio_to_abslt_eng = json_load(efm + "audio_to_abslt_eng.json")
+clean_to_noisy = json_load(EXPERIMENT_FOLDER_MAPS + "clean_to_noisy.json")
+noisy_to_clean = json_load(EXPERIMENT_FOLDER_MAPS + "noisy_to_clean.json")
+audio_to_abslt = json_load(EXPERIMENT_FOLDER_MAPS + "audio_to_abslt.json")
+audio_to_angle = json_load(EXPERIMENT_FOLDER_MAPS + "audio_to_angle.json")
+audio_to_abslt_eng = json_load(
+    EXPERIMENT_FOLDER_MAPS + "audio_to_abslt_eng.json"
+)
 
 
 def build_X_Y_wrapper(clean_list):
@@ -45,7 +49,7 @@ splits = kf.split(clean_list)
 summary = []
 
 for (train_indexes, valid_indexes), i_fold in zip(splits, range(N_FOLDS)):
-    print("\n┌ Fold {}/{}".format(i_fold + 1, N_FOLDS))
+    print("\nFold {}/{}".format(i_fold + 1, N_FOLDS))
     start = time()
 
     train_clean = [clean_list[i] for i in train_indexes]
@@ -62,10 +66,12 @@ for (train_indexes, valid_indexes), i_fold in zip(splits, range(N_FOLDS)):
         X_train_t, Y_train_t, _ = build_X_Y_wrapper(train_clean_t)
         X_train_v, Y_train_v, _ = build_X_Y_wrapper(train_clean_v)
 
+        model_id = "nn_" + str(i_fold)
+
         Y_model = train_and_predict(X_train_t, Y_train_t,
                                     X_train_v, Y_train_v,
                                     X_valid, Y_valid,
-                                    i_fold)
+                                    i_fold, model_id)
     elif INNER_VALIDATION > 1 and isinstance(INNER_VALIDATION, int):
         inner_kf = KFold(
             n_splits=INNER_VALIDATION,
@@ -88,10 +94,15 @@ for (train_indexes, valid_indexes), i_fold in zip(splits, range(N_FOLDS)):
             X_train_t, Y_train_t, _ = build_X_Y_wrapper(train_clean_t)
             X_train_v, Y_train_v, _ = build_X_Y_wrapper(train_clean_v)
 
-            Y_model_iter = train_and_predict(X_train_t, Y_train_t,
-                                             X_train_v, Y_train_v,
-                                             X_valid, Y_valid,
-                                             inner_i_fold) / INNER_VALIDATION
+            model_id = "_".join(["nn", str(i_fold), str(inner_i_fold)])
+
+            Y_model_iter = train_and_predict(
+                X_train_t, Y_train_t,
+                X_train_v, Y_train_v,
+                X_valid, Y_valid,
+                inner_i_fold, model_id
+            ) / INNER_VALIDATION
+
             if Y_model is None:
                 Y_model = Y_model_iter
             else:
@@ -133,7 +144,7 @@ for (train_indexes, valid_indexes), i_fold in zip(splits, range(N_FOLDS)):
 
         y_to_file(y_cleaned, efc + noisy_filename + ".wav")
 
-    print("└─ {}s".format(round(time() - start, 2)))
+    print("└ {}s".format(round(time() - start, 2)))
 
 columns = ["noisy_filename", "filename", "duration",
            "noise_name", "noise_multiplier", "noisy_pesq",
@@ -146,6 +157,6 @@ improved_pesq_std = summary["improved_pesq"].std()
 
 print("\nMean PESQ improvement:  ", improved_pesq_mean)
 print("Stddev PESQ improvement:", improved_pesq_std)
-print("Mean - stddev:          ", improved_pesq_mean - improved_pesq_std, "\n")
+print("Mean - 1*Stddev         ", improved_pesq_mean - improved_pesq_std, "\n")
 
-summary.to_csv(summary_path, index=False)
+summary.to_csv(EXPERIMENT_FOLDER + "summary.csv", index=False)
