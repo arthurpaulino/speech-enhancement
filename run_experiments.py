@@ -126,7 +126,7 @@ for (train_indexes, valid_indexes), i_fold in zip(splits, range(N_FOLDS)):
         y_cleaned = ys_model[noisy]
 
         noisy_filename = filename_from_path(noisy)
-        filename, noise_name, noise_multiplier = noisy_filename.split("+")
+        filename, noise_name, snr = noisy_filename.split("|")
 
         noisy_pesq = pesq(y_clean, y_noisy)
         cleaned_pesq = pesq(y_clean, y_cleaned)
@@ -136,7 +136,7 @@ for (train_indexes, valid_indexes), i_fold in zip(splits, range(N_FOLDS)):
             "filename": filename,
             "duration": y_noisy.shape[0] / SAMPLING_RATE,
             "noise_name": noise_name,
-            "noise_multiplier": int(noise_multiplier),
+            "snr": int(snr),
             "noisy_pesq": noisy_pesq,
             "cleaned_pesq": cleaned_pesq,
             "improved_pesq": cleaned_pesq - noisy_pesq,
@@ -148,7 +148,7 @@ for (train_indexes, valid_indexes), i_fold in zip(splits, range(N_FOLDS)):
     print("└ {}s".format(round(time() - start, 2)))
 
 columns = ["noisy_filename", "filename", "duration",
-           "noise_name", "noise_multiplier", "noisy_pesq",
+           "noise_name", "snr", "noisy_pesq",
            "cleaned_pesq", "improved_pesq", "fold"]
 
 summary = pd.DataFrame(summary)[columns]

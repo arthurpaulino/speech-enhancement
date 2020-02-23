@@ -73,6 +73,10 @@ def pkl_dump(obj, path):
     pickle.dump(obj, open(path, "wb"))
 
 
+def noise_multiplier(y_clean, y_noise, snr):
+    return (y_clean.var() / y_noise.var() / (10 ** (snr / 10))) ** 0.5
+
+
 def filled_sum(y_1, y_2):
     if y_1.shape[0] <= y_2.shape[0]:
         sml = y_1

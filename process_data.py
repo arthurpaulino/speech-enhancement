@@ -27,7 +27,7 @@ noisy_path_list = glob(NOISES_FOLDER_SLASH + "*")
 
 n_clean = len(clean_path_list)
 n_noisy = len(noisy_path_list)
-n_noises = len(NOISE_DB_MULTIPLIERS)
+n_noises = len(SNRS)
 
 bar = Bar("Progress", max=n_clean * n_noisy * n_noises)
 
@@ -60,19 +60,16 @@ for clean_path in clean_path_list:
         y_noise = file_to_y(noise_path)
         noise_name = filename_from_path(noise_path)
 
-        for noise_db_multiplier in NOISE_DB_MULTIPLIERS:
-            y_noise_mult = noise_db_multiplier * y_noise
+        for snr in SNRS:
+            multiplier = noise_multiplier(y_clean, y_noise, snr)
+            y_noise_mult = multiplier * y_noise
 
             y_mixed = filled_sum(
                 y_clean,
                 y_noise_mult[0:min(y_clean.shape[0], y_noise_mult.shape[0])]
             )
 
-            noisy_name = "+".join([
-                clean_name,
-                noise_name,
-                str(round(100 * noise_db_multiplier))
-            ])
+            noisy_name = "|".join([clean_name, noise_name, str(snr)])
 
             abslt_path = EXPERIMENT_FOLDER_ABSLT + noisy_name + ".pkl"
             angle_path = EXPERIMENT_FOLDER_ANGLE + noisy_name + ".pkl"
