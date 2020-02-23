@@ -18,8 +18,9 @@ PESQ_MODE = "nb" # "nb" or "wb"
 
 ########## experiments ##########
 RANDOM_SEED = 43
-N_FOLDS = 2
-INNER_VALIDATION = 0.5 # (int > 1) or (0 < float < 1)
+N_FOLDS = 3
+INNER_VALIDATION = 3 # (int > 1) or (0 < float < 1)
+ensemble_weights_power = 2
 
 ########## neural networks ##########
 # size multiplier, activation function and dropout rate

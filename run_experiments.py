@@ -85,6 +85,8 @@ for (train_indexes, valid_indexes), i_fold in zip(splits, range(N_FOLDS)):
 
         Y_model = None
 
+        Ys_models = []
+
         for (inner_train_indexes, inner_valid_indexes), inner_i_fold in iter:
             inner_start = time()
 
@@ -101,18 +103,17 @@ for (train_indexes, valid_indexes), i_fold in zip(splits, range(N_FOLDS)):
                 X_train_v, Y_train_v,
                 X_valid, Y_valid,
                 inner_i_fold, model_id
-            ) / INNER_VALIDATION
+            )
 
-            if Y_model is None:
-                Y_model = Y_model_iter
-            else:
-                Y_model += Y_model_iter
+            Ys_models.append(Y_model_iter)
 
             print("├─ Inner fold {}/{}: {}s".format(
                 inner_i_fold + 1,
                 INNER_VALIDATION,
                 round(time() - inner_start, 2)
             ))
+
+        Y_model = ensemble(Ys_models)
     else:
         print("Invalid parameter: INNER_VALIDATION")
         exit()

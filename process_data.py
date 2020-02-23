@@ -1,4 +1,5 @@
 from glob import glob
+import shutil
 import os
 
 from progress.bar import Bar
@@ -7,11 +8,13 @@ from parameters import *
 from utils import *
 
 
+if os.path.exists(EXPERIMENT_FOLDER):
+    shutil.rmtree(EXPERIMENT_FOLDER)
+
 for folder in [EXPERIMENT_FOLDER_CLEAN, EXPERIMENT_FOLDER_NOISY,
                EXPERIMENT_FOLDER_ABSLT, EXPERIMENT_FOLDER_ANGLE,
                EXPERIMENT_FOLDER_ABSLT_ENG, EXPERIMENT_FOLDER_MAPS]:
-    if not os.path.exists(folder):
-        os.makedirs(folder)
+    os.makedirs(folder)
 
 noisy_to_clean = {}
 clean_to_noisy = {}

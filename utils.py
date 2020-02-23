@@ -20,7 +20,7 @@ CLEAN_AUDIO_FOLDER_SLASH = CLEAN_AUDIO_FOLDER + "/"\
 NOISES_FOLDER_SLASH = NOISES_FOLDER + "/"\
     if not NOISES_FOLDER.endswith("/") else NOISES_FOLDER
 
-EXPERIMENT_FOLDER = "data/generated/" + EXPERIMENT_NAME + "/"
+EXPERIMENT_FOLDER = "data/experiments/" + EXPERIMENT_NAME + "/"
 
 EXPERIMENT_FOLDER_MAPS = EXPERIMENT_FOLDER + "maps/"
 
@@ -142,6 +142,16 @@ def build_X_Y(clean_list, clean_to_noisy, audio_to_abslt, audio_to_abslt_eng):
                 X = np.concatenate([X, noisy_matrix], axis=0)
                 Y = np.concatenate([Y, clean_matrix], axis=0)
     return X, Y, lengths
+
+
+ERROR = 1e-10
+
+
+def ensemble(Ys_models):
+    M = np.array(Ys_models)
+    means = M.mean(axis=0)
+    weights = 1 / np.maximum(np.abs(M - means), ERROR) ** ensemble_weights_power
+    return np.average(M, weights=weights, axis=0)
 
 
 def extract_ys(Y_model, lengths, clean_list, clean_to_noisy, audio_to_angle):
