@@ -148,13 +148,13 @@ def build_X_Y(clean_list, clean_to_noisy, audio_to_abslt, audio_to_abslt_eng):
     return X, Y, lengths
 
 
-ERROR = 1e-10
+_ERR = 1e-10
 
 
 def ensemble(Ys_models):
     M = np.array(Ys_models)
     means = M.mean(axis=0)
-    weights = 1 / np.maximum(np.abs(M - means), ERROR) ** ensemble_weights_power
+    weights = 1 / np.maximum(np.abs(M - means), _ERR) ** ENSEMBLE_WEIGHTS_POWER
     return np.average(M, weights=weights, axis=0)
 
 
