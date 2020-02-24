@@ -107,7 +107,7 @@ def abslt_angle_to_y(abslt, angle):
 def eng_abslt(abslt):
     abslt_df = pd.DataFrame(abslt)
 
-    to_concat = [abslt_df]
+    to_concat = []
 
     if LOOK_BACK > 0:
         back_df = pd.concat(
@@ -115,6 +115,8 @@ def eng_abslt(abslt):
             axis=1
         )
         to_concat.append(back_df)
+
+    to_concat.append(abslt_df)
 
     if LOOK_AFTER > 0:
         after_df = pd.concat(
