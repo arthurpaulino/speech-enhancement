@@ -23,9 +23,6 @@ INNER_VALIDATION = 2 # (int > 1) or (0 < float < 1)
 ENSEMBLE_WEIGHTS_POWER = 2
 
 ########## neural networks ##########
-# size multiplier, activation function and dropout rate
-LAYERS = [(1, "relu", 0.25)]
-
 PATIENCE = 5
 BATCH_SIZE_RATIO = 0.005
 VERBOSE = 1

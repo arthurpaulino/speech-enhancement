@@ -2,9 +2,8 @@ import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 from keras.callbacks import EarlyStopping, ModelCheckpoint
-from keras.layers import Dense, Dropout, Reshape, Flatten, Conv2D, MaxPooling2D
-from keras.models import Sequential
-from numpy.random import shuffle
+from keras.layers import *
+from keras.models import Model
 
 from sklearn.preprocessing import MinMaxScaler
 
@@ -15,58 +14,38 @@ from utils import *
 early_stop = EarlyStopping(monitor="val_loss", patience=PATIENCE)
 
 
-def add_hidden_layers(nn, input_dim, output_dim):
-
-    for layer_info, i in zip(LAYERS, range(len(LAYERS))):
-        multiplier, activation, dropout = layer_info
-        units = round(multiplier * input_dim)
-
-        nn.add(Dense(units, activation=activation, input_shape=(input_dim,)))
-        nn.add(Dropout(dropout))
-
-
-def add_hidden_layers_(nn, input_dim, output_dim):
-
-    n_rows = LOOK_BACK + 1 + LOOK_AFTER
-    n_cols = output_dim
-
-    nn.add(Reshape((n_rows, n_cols, 1), input_shape=(input_dim,)))
-    nn.add(Conv2D(64,
-           kernel_size=(3, 3),
-           activation="relu"))
-    nn.add(MaxPooling2D(pool_size=(2, 2), padding="same"))
-    nn.add(Dropout(0.25))
-    nn.add(Flatten())
-
-
-def build_dense_tensor(input_dim, output_dim):
-    t = Sequential()
-    t.add(Dense(input_dim, activation="relu", input_shape=(input_dim,)))
-    t.add(Dropout(0.25))
-    return t
-
-
-def build_conv_tensor(input_dim, output_dim):
-    n_rows = LOOK_BACK + 1 + LOOK_AFTER
-    n_cols = output_dim
-
-    t = Sequential()
-    t.add(Reshape((n_rows, n_cols, 1), input_shape=(input_dim,)))
-    t.add(Conv2D(64, kernel_size=(3, 3), activation="relu"))
-    t.add(MaxPooling2D(pool_size=(2, 2), padding="same"))
-    t.add(Dropout(0.25))
-    t.add(Flatten())
-    return t
+def build_tensor(layers, tensor_input):
+    tensor = layers[0](tensor_input)
+    for layer in layers[1:]:
+        tensor = layer(tensor)
+    return tensor
 
 
 def build_nn(input_dim, output_dim):
-    nn = Sequential()
+    model_input = Input((input_dim,))
 
-    add_hidden_layers_(nn, input_dim, output_dim)
+    dense_layers = [
+        Dense(input_dim, activation="relu"),
+        Dropout(0.25)
+    ]
 
-    nn.add(Dense(output_dim, activation="sigmoid"))
+    dense_tensor = build_tensor(dense_layers, model_input)
 
-    nn.compile(optimizer="rmsprop", loss="mae")
+    conv_layers = [
+        Reshape((LOOK_BACK + 1 + LOOK_AFTER, output_dim, 1)),
+        Conv2D(64, (3, 3), activation="relu"),
+        MaxPooling2D((2, 2)),
+        Flatten()
+    ]
+
+    conv_tensor = build_tensor(conv_layers, model_input)
+
+    concat = Concatenate()([dense_tensor, conv_tensor])
+    output = Dense(output_dim, activation="sigmoid")(concat)
+
+    nn = Model(model_input, output)
+
+    nn.compile(optimizer="adam", loss="mae")
 
     return nn
 
