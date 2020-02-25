@@ -46,7 +46,7 @@ clean_list = list(clean_to_noisy)
 kf = KFold(n_splits=N_FOLDS, shuffle=True, random_state=RANDOM_SEED)
 splits = kf.split(clean_list)
 
-summary = []
+report = []
 
 for (train_indexes, valid_indexes), i_fold in zip(splits, range(N_FOLDS)):
     print("\nFold {}/{}".format(i_fold + 1, N_FOLDS))
@@ -131,7 +131,7 @@ for (train_indexes, valid_indexes), i_fold in zip(splits, range(N_FOLDS)):
         noisy_pesq = pesq(y_clean, y_noisy)
         cleaned_pesq = pesq(y_clean, y_cleaned)
 
-        summary.append({
+        report.append({
             "noisy_filename": noisy_filename,
             "filename": filename,
             "duration": y_noisy.shape[0] / SAMPLING_RATE,
@@ -151,13 +151,20 @@ columns = ["noisy_filename", "filename", "duration",
            "noise_name", "snr", "noisy_pesq",
            "cleaned_pesq", "improved_pesq", "fold"]
 
-summary = pd.DataFrame(summary)[columns]
+report = pd.DataFrame(report)[columns]
+report.to_csv(EXPERIMENT_FOLDER + "report.csv", index=False)
 
-improved_pesq_mean = summary["improved_pesq"].mean()
-improved_pesq_std = summary["improved_pesq"].std()
+improved_pesq_mean = report["improved_pesq"].mean()
+improved_pesq_std = report["improved_pesq"].std()
 
-print("\nMean PESQ improvement:  ", improved_pesq_mean)
-print("Stddev PESQ improvement:", improved_pesq_std)
-print("Mean - 1*Stddev         ", improved_pesq_mean - improved_pesq_std, "\n")
+summary =  "Mean PESQ improvement:   {}\n".format(improved_pesq_mean)
+summary += "Stddev PESQ improvement: {}\n".format(improved_pesq_std)
+summary += "Mean - 1*Stddev:         {}\n".format(
+    improved_pesq_mean - improved_pesq_std
+)
 
-summary.to_csv(EXPERIMENT_FOLDER + "summary.csv", index=False)
+print("\n" + summary)
+
+summary_file = open(EXPERIMENT_FOLDER + "summary.txt", "w")
+summary_file.write(summary)
+summary_file.close()

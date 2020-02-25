@@ -31,16 +31,27 @@ def build_nn(input_dim, output_dim):
 
     dense_tensor = build_tensor(dense_layers, model_input)
 
-    conv_layers = [
+    conv_layers_1 = [
         Reshape((LOOK_BACK + 1 + LOOK_AFTER, output_dim, 1)),
-        Conv2D(64, (3, 3), activation="relu"),
-        MaxPooling2D((2, 2)),
-        Flatten()
+        Conv2D(32, (3, 3), activation="relu", padding="same"),
+        MaxPooling2D((2, 2))
     ]
 
-    conv_tensor = build_tensor(conv_layers, model_input)
+    conv_layers_2 = [
+        Conv2D(64, (3, 3), activation="relu", padding="same"),
+        MaxPooling2D((2, 2))
+    ]
 
-    concat = Concatenate()([dense_tensor, conv_tensor])
+    conv_tensor_1 = build_tensor(conv_layers_1, model_input)
+    conv_tensor_2 = build_tensor(conv_layers_2, conv_tensor_1)
+
+    conv_tensor_1_flat = Flatten()(conv_tensor_1)
+    conv_tensor_2_flat = Flatten()(conv_tensor_2)
+
+    concat = Concatenate()([dense_tensor,
+                            conv_tensor_1_flat,
+                            conv_tensor_2_flat])
+
     output = Dense(output_dim, activation="sigmoid")(concat)
 
     nn = Model(model_input, output)
