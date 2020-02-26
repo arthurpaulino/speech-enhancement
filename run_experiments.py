@@ -128,8 +128,17 @@ for (train_indexes, valid_indexes), i_fold in zip(splits, range(N_FOLDS)):
         noisy_filename = filename_from_path(noisy)
         filename, noise_name, snr = noisy_filename.split("|")
 
+        noisy_snr = snr_fn(y_clean, y_noisy)
+        cleaned_snr = snr_fn(y_clean, y_noisy)
+
         noisy_pesq = pesq_fn(y_clean, y_noisy)
         cleaned_pesq = pesq_fn(y_clean, y_cleaned)
+
+        noisy_stoi = stoi_fn(y_clean, y_noisy)
+        cleaned_stoi = stoi_fn(y_clean, y_noisy)
+
+        noisy_estoi = estoi_fn(y_clean, y_noisy)
+        cleaned_estoi = estoi_fn(y_clean, y_noisy)
 
         report.append({
             "noisy_filename": noisy_filename,
@@ -137,30 +146,71 @@ for (train_indexes, valid_indexes), i_fold in zip(splits, range(N_FOLDS)):
             "duration": y_noisy.shape[0] / SAMPLING_RATE,
             "noise_name": noise_name,
             "snr": int(snr),
+            "fold": i_fold + 1,
+            "noisy_snr": noisy_snr,
+            "cleaned_snr": cleaned_snr,
+            "improved_snr": cleaned_snr - noisy_snr,
             "noisy_pesq": noisy_pesq,
             "cleaned_pesq": cleaned_pesq,
             "improved_pesq": cleaned_pesq - noisy_pesq,
-            "fold": i_fold + 1
+            "noisy_stoi": noisy_stoi,
+            "cleaned_stoi": cleaned_stoi,
+            "improved_stoi": cleaned_stoi - noisy_stoi,
+            "noisy_estoi": noisy_estoi,
+            "cleaned_estoi": cleaned_estoi,
+            "improved_estoi": cleaned_estoi - noisy_estoi
         })
 
         y_to_file(y_cleaned, efc + noisy_filename + ".wav")
 
     print("└ {}s".format(round(time() - start, 2)))
 
-columns = ["noisy_filename", "filename", "duration",
-           "noise_name", "snr", "noisy_pesq",
-           "cleaned_pesq", "improved_pesq", "fold"]
+columns = [
+    "noisy_filename", "filename", "duration",
+    "noise_name", "snr", "fold",
+    "noisy_snr", "cleaned_snr", "improved_snr",
+    "noisy_pesq", "cleaned_pesq", "improved_pesq",
+    "noisy_stoi", "cleaned_stoi", "improved_stoi",
+    "noisy_estoi", "cleaned_estoi", "improved_estoi"
+]
 
 report = pd.DataFrame(report)[columns]
 report.to_csv(EXPERIMENT_FOLDER + "report.csv", index=False)
 
+improved_snr_mean = report["improved_snr"].mean()
+improved_snr_std = report["improved_snr"].std()
+
 improved_pesq_mean = report["improved_pesq"].mean()
 improved_pesq_std = report["improved_pesq"].std()
 
-summary =  "Mean PESQ improvement:   {}\n".format(improved_pesq_mean)
-summary += "Stddev PESQ improvement: {}\n".format(improved_pesq_std)
-summary += "Mean - 1*Stddev:         {}\n".format(
-    improved_pesq_mean - improved_pesq_std
+improved_stoi_mean = report["improved_stoi"].mean()
+improved_stoi_std = report["improved_stoi"].std()
+
+improved_estoi_mean = report["improved_estoi"].mean()
+improved_estoi_std = report["improved_estoi"].std()
+
+summary =  "  SNR: {} ± {} ({})\n".format(
+    round(improved_snr_mean, 5),
+    round(improved_snr_std, 5),
+    round(improved_snr_mean - improved_snr_std, 5)
+)
+
+summary += " PESQ: {} ± {} ({})\n".format(
+    round(improved_pesq_mean, 5),
+    round(improved_pesq_std, 5),
+    round(improved_pesq_mean - improved_pesq_std, 5)
+)
+
+summary += " STOI: {} ± {} ({})\n".format(
+    round(improved_stoi_mean, 5),
+    round(improved_stoi_std, 5),
+    round(improved_stoi_mean - improved_stoi_std, 5)
+)
+
+summary += "ESTOI: {} ± {} ({})\n".format(
+    round(improved_estoi_mean, 5),
+    round(improved_estoi_std, 5),
+    round(improved_estoi_mean - improved_estoi_std, 5)
 )
 
 print("\n" + summary)

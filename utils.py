@@ -174,15 +174,22 @@ def extract_ys(Y_model, lengths, clean_list, clean_to_noisy, audio_to_angle):
 
 
 def validate_pesq():
+    to_quit = False
     if PESQ_MODE not in ["nb", "wb"]:
         print("Invalid PESQ mode")
-        exit()
+        to_quit = True
     if PESQ_SAMPLING_RATE not in [8000, 16000]:
         print("Invalid PESQ sampling rate")
-        exit()
+        to_quit = True
     if PESQ_SAMPLING_RATE == 8000 and PESQ_MODE != "nb":
         print("Invalid PESQ sampling rate for 'nb' mode")
+        to_quit = True
+    if to_quit:
         exit()
+
+
+def snr_fn(y_truth, y_valid):
+    return 10 * np.log10(y_truth.var() / (y_truth - y_valid).var())
 
 
 def pesq_fn(y_truth, y_valid):
@@ -193,8 +200,8 @@ def pesq_fn(y_truth, y_valid):
 
 
 def stoi_fn(y_truth, y_valid):
+    return stoi(y_truth, y_valid, SAMPLING_RATE, extended=False)
+
+
+def estoi_fn(y_truth, y_valid):
     return stoi(y_truth, y_valid, SAMPLING_RATE, extended=True)
-
-
-def snr_fn(y_truth, y_valid):
-    return 10 * np.log10(y_truth.var() / (y_truth - y_valid).var())
