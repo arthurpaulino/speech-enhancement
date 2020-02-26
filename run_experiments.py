@@ -128,8 +128,8 @@ for (train_indexes, valid_indexes), i_fold in zip(splits, range(N_FOLDS)):
         noisy_filename = filename_from_path(noisy)
         filename, noise_name, snr = noisy_filename.split("|")
 
-        noisy_pesq = pesq(y_clean, y_noisy)
-        cleaned_pesq = pesq(y_clean, y_cleaned)
+        noisy_pesq = pesq_fn(y_clean, y_noisy)
+        cleaned_pesq = pesq_fn(y_clean, y_cleaned)
 
         report.append({
             "noisy_filename": noisy_filename,

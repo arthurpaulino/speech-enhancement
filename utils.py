@@ -7,7 +7,8 @@ import numpy as np
 import soundfile as sf
 import librosa as lr
 
-from pesq import pesq as pesq_fn
+from pesq import pesq
+from pystoi.stoi import stoi
 
 from parameters import *
 
@@ -184,8 +185,16 @@ def validate_pesq():
         exit()
 
 
-def pesq(y_truth, y_valid):
+def pesq_fn(y_truth, y_valid):
     if SAMPLING_RATE != PESQ_SAMPLING_RATE:
         y_truth = lr.core.resample(y_truth, SAMPLING_RATE, PESQ_SAMPLING_RATE)
         y_valid = lr.core.resample(y_valid, SAMPLING_RATE, PESQ_SAMPLING_RATE)
-    return pesq_fn(PESQ_SAMPLING_RATE, y_truth, y_valid, PESQ_MODE)
+    return pesq(PESQ_SAMPLING_RATE, y_truth, y_valid, PESQ_MODE)
+
+
+def stoi_fn(y_truth, y_valid):
+    return stoi(y_truth, y_valid, SAMPLING_RATE, extended=True)
+
+
+def snr_fn(y_truth, y_valid):
+    return 10 * np.log10(y_truth.var() / (y_truth - y_valid).var())

@@ -3,5 +3,6 @@ librosa==0.7.2
 tensorflow==2.1.0
 keras==2.3.1
 cython==0.29.15
-pesq=0.0.1
-progress=1.5
+pesq==0.0.1
+pystoi==0.2.2
+progress==1.5
