@@ -27,10 +27,9 @@ layers mixed with max pooling layers can be used to extract higher level
 features and help the NNs reconstruct clean spectrograms.
 
 Although NNs need a differentiable loss function to minimize, the validation of
-the optimization attempts will be done with a real audio metric called
-[PESQ](https://www.itu.int/rec/T-REC-P.862), as done on the paper above. This
-way we ensure that the predictions of our models actually translate into audios
-with better quality.
+the optimization attempts will be done with real audio metrics such as PESQ (as
+on the paper above), STOI and SNR. This way we ensure that the predictions of
+our models actually translate into audios with better quality.
 
 ## The proposed architecture
 
