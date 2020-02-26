@@ -188,11 +188,18 @@ def validate_pesq():
         exit()
 
 
+def cap(y_1, y_2):
+    size = min(y_1.shape[0], y_2.shape[0])
+    return y_1[:size], y_2[:size]
+
+
 def snr_fn(y_truth, y_valid):
+    y_truth, y_valid = cap(y_truth, y_valid)
     return 10 * np.log10(y_truth.var() / (y_truth - y_valid).var())
 
 
 def pesq_fn(y_truth, y_valid):
+    y_truth, y_valid = cap(y_truth, y_valid)
     if SAMPLING_RATE != PESQ_SAMPLING_RATE:
         y_truth = lr.core.resample(y_truth, SAMPLING_RATE, PESQ_SAMPLING_RATE)
         y_valid = lr.core.resample(y_valid, SAMPLING_RATE, PESQ_SAMPLING_RATE)
@@ -200,8 +207,10 @@ def pesq_fn(y_truth, y_valid):
 
 
 def stoi_fn(y_truth, y_valid):
+    y_truth, y_valid = cap(y_truth, y_valid)
     return stoi(y_truth, y_valid, SAMPLING_RATE, extended=False)
 
 
 def estoi_fn(y_truth, y_valid):
+    y_truth, y_valid = cap(y_truth, y_valid)
     return stoi(y_truth, y_valid, SAMPLING_RATE, extended=True)
