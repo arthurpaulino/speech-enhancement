@@ -25,4 +25,4 @@ ENSEMBLE_WEIGHTS_POWER = 2
 ########## neural networks ##########
 PATIENCE = 5
 BATCH_SIZE_RATIO = 0.005
-VERBOSE = 1
+VERBOSE = 0
