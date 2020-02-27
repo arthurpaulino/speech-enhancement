@@ -7,7 +7,6 @@ from sklearn.model_selection import KFold
 from numpy.random import seed
 import pandas as pd
 
-from neural_networks import *
 from parameters import *
 from utils import *
 
