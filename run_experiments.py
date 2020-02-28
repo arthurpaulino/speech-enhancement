@@ -10,16 +10,15 @@ import pandas as pd
 from parameters import *
 from utils import *
 
+
 validate_pesq()
 seed(RANDOM_SEED)
 
-efc = EXPERIMENT_FOLDER + "cleaned/"
-efm = EXPERIMENT_FOLDER + "models/"
+efc = EXPERIMENT_FOLDER + "cleaned_exp/"
 
-for folder in efc, efm:
-    if os.path.exists(folder):
-        shutil.rmtree(folder)
-    os.makedirs(folder)
+if os.path.exists(efc):
+    shutil.rmtree(efc)
+os.makedirs(efc)
 
 clean_to_noisy = json_load(EXPERIMENT_FOLDER_MAPS + "clean_to_noisy.json")
 noisy_to_clean = json_load(EXPERIMENT_FOLDER_MAPS + "noisy_to_clean.json")
@@ -54,7 +53,7 @@ for (train_indexes, valid_indexes), i_fold in zip(splits, range(N_FOLDS)):
     train_clean = [clean_list[i] for i in train_indexes]
     valid_clean = [clean_list[i] for i in valid_indexes]
 
-    X_valid, Y_valid, valid_lengths = build_X_Y_wrapper(valid_clean)
+    X_valid, _, valid_lengths = build_X_Y_wrapper(valid_clean)
 
     if 0 < INNER_VALIDATION and INNER_VALIDATION < 1:
         split = round((1 - INNER_VALIDATION) * len(train_clean))
@@ -65,24 +64,17 @@ for (train_indexes, valid_indexes), i_fold in zip(splits, range(N_FOLDS)):
         X_train_t, Y_train_t, _ = build_X_Y_wrapper(train_clean_t)
         X_train_v, Y_train_v, _ = build_X_Y_wrapper(train_clean_v)
 
-        model_id = "nn_" + str(i_fold)
-
-        Y_model = train_and_predict(X_train_t, Y_train_t,
-                                    X_train_v, Y_train_v,
-                                    X_valid, Y_valid,
-                                    i_fold, model_id)
+        Y_model = train_and_predict_val(X_train_t, Y_train_t,
+                                        X_train_v, Y_train_v,
+                                        X_valid)
     elif INNER_VALIDATION > 1 and isinstance(INNER_VALIDATION, int):
-        inner_kf = KFold(
-            n_splits=INNER_VALIDATION,
-            shuffle=True,
-            random_state=RANDOM_SEED
-        )
+        inner_kf = KFold(n_splits=INNER_VALIDATION,
+                         shuffle=True,
+                         random_state=RANDOM_SEED)
 
         inner_splits = inner_kf.split(train_clean)
 
         iter = zip(inner_splits, range(INNER_VALIDATION))
-
-        Y_model = None
 
         Ys_models = []
 
@@ -95,13 +87,10 @@ for (train_indexes, valid_indexes), i_fold in zip(splits, range(N_FOLDS)):
             X_train_t, Y_train_t, _ = build_X_Y_wrapper(train_clean_t)
             X_train_v, Y_train_v, _ = build_X_Y_wrapper(train_clean_v)
 
-            model_id = "_".join(["nn", str(i_fold), str(inner_i_fold)])
-
-            Y_model_iter = train_and_predict(
+            Y_model_iter = train_and_predict_val(
                 X_train_t, Y_train_t,
                 X_train_v, Y_train_v,
-                X_valid, Y_valid,
-                inner_i_fold, model_id
+                X_valid
             )
 
             Ys_models.append(Y_model_iter)

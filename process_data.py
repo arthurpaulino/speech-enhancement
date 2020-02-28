@@ -61,10 +61,9 @@ for clean_path in clean_path_list:
             multiplier = noise_multiplier(y_clean, y_noise, snr)
             y_noise_mult = multiplier * y_noise
 
-            y_mixed = filled_sum(
-                y_clean,
-                y_noise_mult[0:min(y_clean.shape[0], y_noise_mult.shape[0])]
-            )
+            y_noise_mult_extended = extend(y_noise_mult, y_clean.shape[0])
+
+            y_mixed = y_clean + y_noise_mult_extended
 
             noisy_name = "|".join([clean_name, noise_name, str(snr)])
 

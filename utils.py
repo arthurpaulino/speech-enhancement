@@ -89,21 +89,18 @@ def pkl_dump(obj, path):
 ############################ ARRAYS
 
 
-def filled_sum(y_1, y_2):
-    if y_1.shape[0] <= y_2.shape[0]:
-        sml = y_1
-        big = y_2
+def extend(y, size):
+    y_size = y.shape[0]
+    if size <= y_size:
+        return y[:size]
     else:
-        sml = y_2
-        big = y_1
-    big_size, sml_size = big.shape[0], sml.shape[0]
-    s = big.copy()
-    for i in range(big_size // sml_size):
-        s[i * sml_size : (i + 1) * sml_size] += sml
-    mod = big_size % sml_size
-    if mod != 0:
-        s[big_size - mod : big_size] += sml[0 : mod]
-    return s
+        y_new = np.zeros(size)
+        for i in range(size // y_size):
+            y_new[i * y_size : (i + 1) * y_size] += y
+        mod = size % y_size
+        if mod != 0:
+            y_new[size - mod : size] += y[0 : mod]
+        return y_new
 
 
 def y_to_abslt_angle(y):
@@ -162,13 +159,10 @@ def build_X_Y(clean_list, clean_to_noisy, audio_to_abslt, audio_to_abslt_eng):
     return X, Y, lengths
 
 
-_ERR = 1e-10
-
-
 def ensemble(Ys_models):
     M = np.array(Ys_models)
     means = M.mean(axis=0)
-    weights = 1 / np.maximum(np.abs(M - means), _ERR) ** ENSEMBLE_WEIGHTS_POWER
+    weights = 1 / np.maximum(np.abs(M - means), 1e-10) ** ENSEMBLE_WEIGHTS_POWER
     return np.average(M, weights=weights, axis=0)
 
 
@@ -184,16 +178,16 @@ def extract_ys(Y_model, lengths, clean_list, clean_to_noisy, audio_to_angle):
     return ys_model
 
 
+def cap(y_1, y_2):
+    size = min(y_1.shape[0], y_2.shape[0])
+    return y_1[:size], y_2[:size]
+
+
 ############################ AUDIO
 
 
 def noise_multiplier(y_clean, y_noise, snr):
     return (y_clean.var() / y_noise.var() / (10 ** (snr / 10))) ** 0.5
-
-
-def cap(y_1, y_2):
-    size = min(y_1.shape[0], y_2.shape[0])
-    return y_1[:size], y_2[:size]
 
 
 def validate_pesq():
@@ -284,13 +278,9 @@ def build_nn(input_dim, output_dim):
     return nn
 
 
-_EARLY_STOP = EarlyStopping(monitor="val_loss", patience=PATIENCE)
-
-
-def train_and_predict(X_train_t, Y_train_t,
-                      X_train_v, Y_train_v,
-                      X_valid, Y_valid,
-                      seed, model_id):
+def train_and_predict_val(X_train_t, Y_train_t,
+                          X_train_v, Y_train_v,
+                          X_predi):
     input_len, input_dim = X_train_t.shape
     output_dim = Y_train_t.shape[1]
 
@@ -302,27 +292,45 @@ def train_and_predict(X_train_t, Y_train_t,
     X_train_v_scaled = X_scaler.transform(X_train_v)
     Y_train_v_scaled = Y_scaler.transform(Y_train_v)
 
-    X_valid_scaled = X_scaler.transform(X_valid)
-    Y_valid_scaled = Y_scaler.transform(Y_valid)
+    X_predi_scaled = X_scaler.transform(X_predi)
 
     nn = build_nn(input_dim, output_dim)
-
-    callbacks = [
-        _EARLY_STOP,
-        ModelCheckpoint(
-            filepath=EXPERIMENT_FOLDER + "models/" + model_id + ".h5",
-            monitor="val_loss",
-            save_best_only=True
-        )
-    ]
 
     nn.fit(X_train_t_scaled,
            Y_train_t_scaled,
            batch_size=round(BATCH_SIZE_RATIO * input_len),
            epochs=1_000_000, # going to use early stop instead
            verbose=VERBOSE,
-           callbacks=callbacks,
+           callbacks=[EarlyStopping(monitor="val_loss",
+                                    patience=PATIENCE,
+                                    restore_best_weights=True)],
            validation_data=(X_train_v_scaled, Y_train_v_scaled))
 
-    Y_model_scaled = nn.predict(X_valid_scaled)
-    return Y_scaler.inverse_transform(Y_model_scaled)
+    return Y_scaler.inverse_transform(nn.predict(X_predi_scaled))
+
+
+# todo: make this function a conditional part of `train_and_predict_val`
+def train_and_predict(X_train, Y_train, X_predi):
+    input_len, input_dim = X_train.shape
+    output_dim = Y_train.shape[1]
+
+    X_scaler, Y_scaler = MinMaxScaler(), MinMaxScaler()
+
+    X_train_scaled = X_scaler.fit_transform(X_train)
+    Y_train_scaled = Y_scaler.fit_transform(Y_train)
+
+    X_predi_scaled = X_scaler.transform(X_predi)
+
+    nn = build_nn(input_dim, output_dim)
+
+    nn.fit(X_train_scaled,
+           Y_train_scaled,
+           batch_size=round(BATCH_SIZE_RATIO * input_len),
+           epochs=1_000_000, # going to use early stop instead
+           verbose=VERBOSE,
+           callbacks=[EarlyStopping(monitor="loss",
+                                    min_delta=1e-5,
+                                    patience=PATIENCE,
+                                    restore_best_weights=True)])
+
+    return Y_scaler.inverse_transform(nn.predict(X_predi_scaled))
