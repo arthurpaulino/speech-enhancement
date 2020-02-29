@@ -84,9 +84,9 @@ for (train_indexes, valid_indexes), i_fold in zip(splits, range(N_FOLDS)):
             round((time() - inner_start) / 60, 2)
         ))
 
-    Y_model = ensemble(Ys_models)
+    Y_models = ensemble(Ys_models)
 
-    ys_model = extract_ys_wrapper(Y_model, valid_lengths, valid_clean)
+    ys_model = extract_ys_wrapper(Y_models, valid_lengths, valid_clean)
 
     for noisy in ys_model:
         y_noisy = file_to_y(noisy)

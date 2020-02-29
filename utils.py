@@ -5,9 +5,9 @@ import os
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
-from keras.callbacks import EarlyStopping, ModelCheckpoint
+from keras.callbacks import EarlyStopping
 from keras.layers import *
-from keras.models import Model, load_model
+from keras.models import Model as NN
 
 from sklearn.preprocessing import MinMaxScaler
 
@@ -247,14 +247,14 @@ def build_tensor(layers, tensor_input):
 
 
 def build_nn(input_dim, output_dim):
-    model_input = Input((input_dim,))
+    nn_input = Input((input_dim,))
 
     dense_layers = [
         Dense(input_dim, activation="relu"),
         Dropout(0.25)
     ]
 
-    dense_tensor = build_tensor(dense_layers, model_input)
+    dense_tensor = build_tensor(dense_layers, nn_input)
 
     conv_layers_1 = [
         Reshape((LOOK_BACK + 1 + LOOK_AFTER, output_dim, 1)),
@@ -267,7 +267,7 @@ def build_nn(input_dim, output_dim):
         MaxPooling2D((2, 2))
     ]
 
-    conv_tensor_1 = build_tensor(conv_layers_1, model_input)
+    conv_tensor_1 = build_tensor(conv_layers_1, nn_input)
     conv_tensor_2 = build_tensor(conv_layers_2, conv_tensor_1)
 
     conv_tensor_1_flat = Flatten()(conv_tensor_1)
@@ -277,13 +277,25 @@ def build_nn(input_dim, output_dim):
                             conv_tensor_1_flat,
                             conv_tensor_2_flat])
 
-    output = Dense(output_dim, activation="sigmoid")(concat)
+    nn_output = Dense(output_dim, activation="sigmoid")(concat)
 
-    nn = Model(model_input, output)
+    nn = NN(nn_input, nn_output)
 
     nn.compile(optimizer="adam", loss="mae")
 
     return nn
+
+
+class Model:
+    def __init__(self, X_scaler, Y_scaler, nn):
+        self.X_scaler = X_scaler
+        self.Y_scaler = Y_scaler
+        self.nn = nn
+
+    def predict(self, X):
+        return self.Y_scaler.inverse_transform(
+            self.nn.predict(self.X_scaler.transform(X))
+        )
 
 
 def train_and_predict(X_train, Y_train, X_predi,
@@ -296,22 +308,11 @@ def train_and_predict(X_train, Y_train, X_predi,
     X_train_scaled = X_scaler.fit_transform(X_train)
     Y_train_scaled = Y_scaler.fit_transform(Y_train)
 
-    X_predi_scaled = X_scaler.transform(X_predi)
-
     nn = build_nn(input_dim, output_dim)
 
     validation_data = None
     min_delta = 0
     monitor = "loss"
-    model_path = EXPERIMENT_FOLDER_MODELS + str(round(time())) + ".h5"
-
-    callbacks=[EarlyStopping(monitor=monitor,
-                             min_delta=min_delta,
-                             patience=PATIENCE,
-                             restore_best_weights=True),
-               ModelCheckpoint(filepath=model_path,
-                               monitor=monitor,
-                               save_best_only=True)]
 
     if X_valid is not None and Y_valid is not None:
         X_valid_scaled = X_scaler.fit_transform(X_valid)
@@ -319,6 +320,11 @@ def train_and_predict(X_train, Y_train, X_predi,
         validation_data = (X_valid_scaled, Y_valid_scaled)
         min_delta = MIN_DELTA
         monitor = "val_loss"
+
+    callbacks=[EarlyStopping(monitor=monitor,
+                             min_delta=min_delta,
+                             patience=PATIENCE,
+                             restore_best_weights=True)]
 
     nn.fit(X_train_scaled,
            Y_train_scaled,
@@ -328,8 +334,8 @@ def train_and_predict(X_train, Y_train, X_predi,
            callbacks=callbacks,
            validation_data=validation_data)
 
-    return Y_scaler.inverse_transform(nn.predict(X_predi_scaled))
+    model = Model(X_scaler, Y_scaler, nn)
 
+    pkl_dump(model, EXPERIMENT_FOLDER_MODELS + str(round(time())) + ".pkl")
 
-def load_nn(path):
-    return load_model(path)
+    return model.predict(X_predi)

@@ -72,7 +72,7 @@ for clean_path in clean_path_list:
 
             abslt_eng_path = EXPERIMENT_FOLDER_ABSLT_ENG + noisy_name + ".pkl"
 
-            generated_noisy_file_path = EXPERIMENT_FOLDER_NOISY +\
+            generated_noisy_file_path = EXPERIMENT_FOLDER_NOISY_EXP +\
                 noisy_name + ".wav"
 
             noisy_to_clean[generated_noisy_file_path] = clean_copy_path
