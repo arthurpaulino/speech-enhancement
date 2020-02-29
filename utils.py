@@ -1,3 +1,4 @@
+from time import time
 import pickle
 import json
 import os
@@ -42,7 +43,8 @@ EXPERIMENT_FOLDER_ANGLE = EXPERIMENT_FOLDER + "angle/"
 
 EXPERIMENT_FOLDER_ABSLT_ENG = EXPERIMENT_FOLDER + "abslt_eng/"
 
-EXPERIMENT_FOLDER_CLEANED = EXPERIMENT_FOLDER + "cleaned/"
+EXPERIMENT_FOLDER_CLEANED_EXP = EXPERIMENT_FOLDER + "cleaned_exp/"
+EXPERIMENT_FOLDER_MODELS = EXPERIMENT_FOLDER + "models/"
 
 
 _n_fft = round(SAMPLING_RATE * FFT_MS / 1000)
@@ -278,39 +280,8 @@ def build_nn(input_dim, output_dim):
     return nn
 
 
-def train_and_predict_val(X_train_t, Y_train_t,
-                          X_train_v, Y_train_v,
-                          X_predi):
-    input_len, input_dim = X_train_t.shape
-    output_dim = Y_train_t.shape[1]
-
-    X_scaler, Y_scaler = MinMaxScaler(), MinMaxScaler()
-
-    X_train_t_scaled = X_scaler.fit_transform(X_train_t)
-    Y_train_t_scaled = Y_scaler.fit_transform(Y_train_t)
-
-    X_train_v_scaled = X_scaler.transform(X_train_v)
-    Y_train_v_scaled = Y_scaler.transform(Y_train_v)
-
-    X_predi_scaled = X_scaler.transform(X_predi)
-
-    nn = build_nn(input_dim, output_dim)
-
-    nn.fit(X_train_t_scaled,
-           Y_train_t_scaled,
-           batch_size=round(BATCH_SIZE_RATIO * input_len),
-           epochs=1_000_000, # going to use early stop instead
-           verbose=VERBOSE,
-           callbacks=[EarlyStopping(monitor="val_loss",
-                                    patience=PATIENCE,
-                                    restore_best_weights=True)],
-           validation_data=(X_train_v_scaled, Y_train_v_scaled))
-
-    return Y_scaler.inverse_transform(nn.predict(X_predi_scaled))
-
-
-# todo: make this function a conditional part of `train_and_predict_val`
-def train_and_predict(X_train, Y_train, X_predi):
+def train_and_predict(X_train, Y_train, X_predi,
+                      X_valid=None, Y_valid=None):
     input_len, input_dim = X_train.shape
     output_dim = Y_train.shape[1]
 
@@ -323,14 +294,32 @@ def train_and_predict(X_train, Y_train, X_predi):
 
     nn = build_nn(input_dim, output_dim)
 
+    validation_data = None
+    min_delta = 0
+    monitor = "loss"
+    model_path = EXPERIMENT_FOLDER_MODELS + str(round(time())) + ".h5"
+
+    callbacks=[EarlyStopping(monitor=monitor,
+                             min_delta=min_delta,
+                             patience=PATIENCE,
+                             restore_best_weights=True),
+               ModelCheckpoint(filepath=model_path,
+                               monitor=monitor,
+                               save_best_only=True)]
+
+    if X_valid is not None and Y_valid is not None:
+        X_valid_scaled = X_scaler.fit_transform(X_valid)
+        Y_valid_scaled = Y_scaler.fit_transform(Y_valid)
+        validation_data = (X_valid_scaled, Y_valid_scaled)
+        min_delta = MIN_DELTA
+        monitor = "val_loss"
+
     nn.fit(X_train_scaled,
            Y_train_scaled,
            batch_size=round(BATCH_SIZE_RATIO * input_len),
            epochs=1_000_000, # going to use early stop instead
            verbose=VERBOSE,
-           callbacks=[EarlyStopping(monitor="loss",
-                                    min_delta=1e-5,
-                                    patience=PATIENCE,
-                                    restore_best_weights=True)])
+           callbacks=callbacks,
+           validation_data=validation_data)
 
     return Y_scaler.inverse_transform(nn.predict(X_predi_scaled))

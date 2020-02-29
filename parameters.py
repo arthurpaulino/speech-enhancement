@@ -19,10 +19,11 @@ PESQ_MODE = "nb" # "nb" or "wb"
 ########## experiments ##########
 RANDOM_SEED = 43
 N_FOLDS = 2
-INNER_VALIDATION = 2 # (int > 1) or (0 < float < 1)
+INNER_N_FOLDS = 2
 ENSEMBLE_WEIGHTS_POWER = 2
 
 ########## neural networks ##########
 PATIENCE = 5
+MIN_DELTA = 1e-5
 BATCH_SIZE_RATIO = 0.005
 VERBOSE = 0
