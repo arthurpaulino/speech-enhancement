@@ -7,7 +7,7 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
 from keras.callbacks import EarlyStopping, ModelCheckpoint
 from keras.layers import *
-from keras.models import Model
+from keras.models import Model, load_model
 
 from sklearn.preprocessing import MinMaxScaler
 
@@ -31,12 +31,15 @@ CLEAN_AUDIO_FOLDER_SLASH = CLEAN_AUDIO_FOLDER + "/"\
 NOISES_FOLDER_SLASH = NOISES_FOLDER + "/"\
     if not NOISES_FOLDER.endswith("/") else NOISES_FOLDER
 
+NOISY_FOLDER_SLASH = NOISY_FOLDER + "/"\
+    if not NOISY_FOLDER.endswith("/") else NOISY_FOLDER
+
 EXPERIMENT_FOLDER = "data/experiments/" + EXPERIMENT_NAME + "/"
 
 EXPERIMENT_FOLDER_MAPS = EXPERIMENT_FOLDER + "maps/"
 
 EXPERIMENT_FOLDER_CLEAN = EXPERIMENT_FOLDER + "clean/"
-EXPERIMENT_FOLDER_NOISY = EXPERIMENT_FOLDER + "noisy/"
+EXPERIMENT_FOLDER_NOISY_EXP = EXPERIMENT_FOLDER + "noisy_exp/"
 
 EXPERIMENT_FOLDER_ABSLT = EXPERIMENT_FOLDER + "abslt/"
 EXPERIMENT_FOLDER_ANGLE = EXPERIMENT_FOLDER + "angle/"
@@ -45,6 +48,9 @@ EXPERIMENT_FOLDER_ABSLT_ENG = EXPERIMENT_FOLDER + "abslt_eng/"
 
 EXPERIMENT_FOLDER_CLEANED_EXP = EXPERIMENT_FOLDER + "cleaned_exp/"
 EXPERIMENT_FOLDER_MODELS = EXPERIMENT_FOLDER + "models/"
+
+EXPERIMENT_FOLDER_NOISY = EXPERIMENT_FOLDER + "noisy/"
+EXPERIMENT_FOLDER_CLEANED = EXPERIMENT_FOLDER + "cleaned/"
 
 
 _n_fft = round(SAMPLING_RATE * FFT_MS / 1000)
@@ -323,3 +329,7 @@ def train_and_predict(X_train, Y_train, X_predi,
            validation_data=validation_data)
 
     return Y_scaler.inverse_transform(nn.predict(X_predi_scaled))
+
+
+def load_nn(path):
+    return load_model(path)

@@ -7,7 +7,7 @@ from parameters import *
 from utils import *
 
 
-for folder in [EXPERIMENT_FOLDER_CLEAN, EXPERIMENT_FOLDER_NOISY,
+for folder in [EXPERIMENT_FOLDER_CLEAN, EXPERIMENT_FOLDER_NOISY_EXP,
                EXPERIMENT_FOLDER_ABSLT, EXPERIMENT_FOLDER_ANGLE,
                EXPERIMENT_FOLDER_ABSLT_ENG, EXPERIMENT_FOLDER_MAPS]:
     if not os.path.exists(folder):

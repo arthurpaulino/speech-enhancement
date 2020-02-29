@@ -3,6 +3,7 @@ EXPERIMENT_NAME = "exp_test"
 ########## data generation ##########
 CLEAN_AUDIO_FOLDER = "data/clean_test/"
 NOISES_FOLDER = "data/noise_test/"
+NOISY_FOLDER = "data/noisy_test/"
 SAMPLING_RATE = 8000
 SNRS = [-5] # sound to noise ratio (dB). int values, only
 
