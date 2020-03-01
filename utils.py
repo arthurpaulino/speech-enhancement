@@ -52,6 +52,8 @@ EXPERIMENT_FOLDER_MODELS = EXPERIMENT_FOLDER + "models/"
 EXPERIMENT_FOLDER_NOISY = EXPERIMENT_FOLDER + "noisy/"
 EXPERIMENT_FOLDER_CLEANED = EXPERIMENT_FOLDER + "cleaned/"
 
+EXPERIMENT_FOLDER_REVERSE = EXPERIMENT_FOLDER + "reverse/"
+
 
 _n_fft = round(SAMPLING_RATE * FFT_MS / 1000)
 _hop_length = round(_n_fft * (1 - OVERLAP))
@@ -150,20 +152,22 @@ def eng_abslt(abslt):
     return abslt_eng.fillna(0).values
 
 
+def concatenate(Xs, Ys):
+    return np.concatenate(Xs, axis=0), np.concatenate(Ys, axis=0)
+
+
 def build_X_Y(clean_list, clean_to_noisy, audio_to_abslt, audio_to_abslt_eng):
-    X, Y = None, None
+    noisy_matrices = []
+    clean_matrices = []
     lengths = []
     for clean in clean_list:
         clean_matrix = pkl_load(audio_to_abslt[clean])
         lengths.append(clean_matrix.shape[0])
         for noisy in clean_to_noisy[clean]:
             noisy_matrix = pkl_load(audio_to_abslt_eng[noisy])
-            if X is None:
-                X = noisy_matrix
-                Y = clean_matrix
-            else:
-                X = np.concatenate([X, noisy_matrix], axis=0)
-                Y = np.concatenate([Y, clean_matrix], axis=0)
+            noisy_matrices.append(noisy_matrix)
+            clean_matrices.append(clean_matrix)
+    X, Y = concatenate(noisy_matrices, clean_matrices)
     return X, Y, lengths
 
 
@@ -299,7 +303,7 @@ class Model:
 
 
 def train_and_predict(X_train, Y_train, X_predi,
-                      X_valid=None, Y_valid=None):
+                      X_valid=None, Y_valid=None, save_model=True):
     input_len, input_dim = X_train.shape
     output_dim = Y_train.shape[1]
 
@@ -311,14 +315,14 @@ def train_and_predict(X_train, Y_train, X_predi,
     nn = build_nn(input_dim, output_dim)
 
     validation_data = None
-    min_delta = 0
+    min_delta = MIN_DELTA
     monitor = "loss"
 
     if X_valid is not None and Y_valid is not None:
         X_valid_scaled = X_scaler.fit_transform(X_valid)
         Y_valid_scaled = Y_scaler.fit_transform(Y_valid)
         validation_data = (X_valid_scaled, Y_valid_scaled)
-        min_delta = MIN_DELTA
+        min_delta = 0
         monitor = "val_loss"
 
     callbacks=[EarlyStopping(monitor=monitor,
@@ -336,6 +340,7 @@ def train_and_predict(X_train, Y_train, X_predi,
 
     model = Model(X_scaler, Y_scaler, nn)
 
-    pkl_dump(model, EXPERIMENT_FOLDER_MODELS + str(round(time())) + ".pkl")
+    if save_model:
+        pkl_dump(model, EXPERIMENT_FOLDER_MODELS + str(round(time())) + ".pkl")
 
     return model.predict(X_predi)

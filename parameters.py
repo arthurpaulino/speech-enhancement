@@ -7,6 +7,10 @@ NOISY_FOLDER = "data/noisy_test/"
 SAMPLING_RATE = 8000
 SNRS = [-5] # sound to noise ratio (dB). int values, only
 
+########## reverse learning ##########
+REVERSE_LEARNING_FILE = "data/reverse_test.wav"
+VOICELESS_INTERVALS = [(63.4, 73.07)]
+
 ########## data processing ##########
 FFT_MS = 32
 OVERLAP = 0.75
@@ -25,6 +29,6 @@ ENSEMBLE_WEIGHTS_POWER = 2
 
 ########## neural networks ##########
 PATIENCE = 5
-MIN_DELTA = 1e-5
+MIN_DELTA = 1e-3 # for reverse learning, only
 BATCH_SIZE_RATIO = 0.005
-VERBOSE = 0
+VERBOSE = 1
