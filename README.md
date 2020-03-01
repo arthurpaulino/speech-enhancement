@@ -122,7 +122,8 @@ of the models created by the `run_experiments.py` script.
 
 * `reverse_learning.py` trains NNs that aim to extract the noises so we can
 invert their phases by 180° and sum them to the original file, cleaning the
-audios with destructive interferences.
+audios with destructive interferences. This is an experimental approach and
+doesn't seem to work on random noises like white, brown, pink ones and such.
 
 * `utils.py` contains definitions of auxiliary functions and variables that aim
 to facilitate the implementation of the other scripts above.
