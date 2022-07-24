@@ -7,15 +7,10 @@ NOISY_FOLDER = "data/noisy_test/"
 SAMPLING_RATE = 8000
 SNRS = [-5] # sound to noise ratio (dB). int values, only
 
-########## reverse learning ##########
-REVERSE_LEARNING_FILE = "data/reverse_test.wav"
-VOICELESS_INTERVALS = [(63.4, 73.07)]
-
 ########## data processing ##########
-FFT_MS = 32
-OVERLAP = 0.75
-LOOK_BACK = 2
-LOOK_AFTER = 2
+FFT_MS = 32    # length of each frame in milliseconds
+OVERLAP = 0.75 # the % of overlap between frames
+PEEK = 2       # peek rows above and below then append them to the current row
 
 ########## pesq ##########
 PESQ_SAMPLING_RATE = 8000 # 8k or 16k
@@ -29,6 +24,5 @@ ENSEMBLE_WEIGHTS_POWER = 2
 
 ########## neural networks ##########
 PATIENCE = 5
-MIN_DELTA = 1e-3 # for reverse learning, only
 BATCH_SIZE_RATIO = 0.005
 VERBOSE = 1

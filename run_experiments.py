@@ -21,21 +21,21 @@ for folder in EXPERIMENT_FOLDER_CLEANED_EXP, EXPERIMENT_FOLDER_MODELS:
 
 clean_to_noisy = json_load(EXPERIMENT_FOLDER_MAPS + "clean_to_noisy.json")
 noisy_to_clean = json_load(EXPERIMENT_FOLDER_MAPS + "noisy_to_clean.json")
-audio_to_abslt = json_load(EXPERIMENT_FOLDER_MAPS + "audio_to_abslt.json")
-audio_to_angle = json_load(EXPERIMENT_FOLDER_MAPS + "audio_to_angle.json")
-audio_to_abslt_eng = json_load(
-    EXPERIMENT_FOLDER_MAPS + "audio_to_abslt_eng.json"
+audio_to_ampli = json_load(EXPERIMENT_FOLDER_MAPS + "audio_to_ampli.json")
+audio_to_phase = json_load(EXPERIMENT_FOLDER_MAPS + "audio_to_phase.json")
+audio_to_ampli_eng = json_load(
+    EXPERIMENT_FOLDER_MAPS + "audio_to_ampli_eng.json"
 )
 
 
 def build_X_Y_wrapper(clean_list):
     return build_X_Y(clean_list, clean_to_noisy,
-                     audio_to_abslt, audio_to_abslt_eng)
+                     audio_to_ampli, audio_to_ampli_eng)
 
 
 def extract_ys_wrapper(Y_model, lengths, clean_list):
     return extract_ys(Y_model, lengths, clean_list,
-                      clean_to_noisy, audio_to_angle)
+                      clean_to_noisy, audio_to_phase)
 
 
 clean_list = list(clean_to_noisy)

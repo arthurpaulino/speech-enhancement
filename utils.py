@@ -41,10 +41,10 @@ EXPERIMENT_FOLDER_MAPS = EXPERIMENT_FOLDER + "maps/"
 EXPERIMENT_FOLDER_CLEAN = EXPERIMENT_FOLDER + "clean/"
 EXPERIMENT_FOLDER_NOISY_EXP = EXPERIMENT_FOLDER + "noisy_exp/"
 
-EXPERIMENT_FOLDER_ABSLT = EXPERIMENT_FOLDER + "abslt/"
-EXPERIMENT_FOLDER_ANGLE = EXPERIMENT_FOLDER + "angle/"
+EXPERIMENT_FOLDER_MAGNI = EXPERIMENT_FOLDER + "ampli/"
+EXPERIMENT_FOLDER_PHASE = EXPERIMENT_FOLDER + "phase/"
 
-EXPERIMENT_FOLDER_ABSLT_ENG = EXPERIMENT_FOLDER + "abslt_eng/"
+EXPERIMENT_FOLDER_MAGNI_ENG = EXPERIMENT_FOLDER + "ampli_eng/"
 
 EXPERIMENT_FOLDER_CLEANED_EXP = EXPERIMENT_FOLDER + "cleaned_exp/"
 EXPERIMENT_FOLDER_MODELS = EXPERIMENT_FOLDER + "models/"
@@ -54,8 +54,10 @@ EXPERIMENT_FOLDER_CLEANED = EXPERIMENT_FOLDER + "cleaned/"
 
 EXPERIMENT_FOLDER_REVERSE = EXPERIMENT_FOLDER + "reverse/"
 
-
+# the number of samples for each frame
 _n_fft = round(SAMPLING_RATE * FFT_MS / 1000)
+
+# the number of samples skipped until the next frame
 _hop_length = round(_n_fft * (1 - OVERLAP))
 
 
@@ -71,27 +73,33 @@ def filename_from_path(path):
     return path.split("/")[-1].split(".")[0]
 
 
+# extracts an array of samples from an audio file
 def file_to_y(path):
     y, _ = lr.load(path, sr=SAMPLING_RATE)
     return y
 
 
+# writes an array of samples to a file
 def y_to_file(y, path):
     sf.write(path, y, SAMPLING_RATE)
 
 
+# loads a dictonary from a JSON file
 def json_load(path):
     return json.load(open(path, "r"))
 
 
+# writes a dictionary to a JSON file
 def json_dump(obj, path):
     json.dump(obj, open(path, "w"))
 
 
+# reads a pickle object
 def pkl_load(path):
     return pickle.load(open(path, "rb"))
 
 
+# dumps a pickle object
 def pkl_dump(obj, path):
     pickle.dump(obj, open(path, "wb"))
 
@@ -99,6 +107,7 @@ def pkl_dump(obj, path):
 ############################ ARRAYS
 
 
+# extends an array with replicas of itself to a certain length
 def extend(y, size):
     y_size = y.shape[0]
     if size <= y_size:
@@ -113,64 +122,65 @@ def extend(y, size):
         return y_new
 
 
-def y_to_abslt_angle(y):
+# extracts the matrices of magnitudes and phases from an array of samples
+# note: the output matrices are transposed
+def y_to_ampli_phase(y):
     D = lr.core.stft(y=y, n_fft=_n_fft, hop_length=_hop_length).T
-    return np.abs(D), np.angle(D)
+    return np.abs(D), np.phase(D)
 
 
-def abslt_angle_to_y(abslt, angle):
-    D = abslt * (np.cos(angle) + np.sin(angle) * 1j)
+# computes the array of samples from a pair of magnitudes/phases matrices
+# note: the input matrices must be transposed
+def ampli_phase_to_y(ampli, phase):
+    D = ampli * (np.cos(phase) + np.sin(phase) * 1j)
     return lr.core.istft(D.T, hop_length=_hop_length)
 
 
-def eng_abslt(abslt):
-    abslt_df = pd.DataFrame(abslt)
+# enriches each row with data from previous and incoming rows
+def eng_ampli(ampli):
+    if PEEK > 0:
+        ampli_df = pd.DataFrame(ampli)
 
-    to_concat = []
-
-    if LOOK_BACK > 0:
         back_df = pd.concat(
-            [abslt_df.shift(i + 1) for i in range(LOOK_BACK)],
+            [ampli_df.shift(i + 1).fillna(0) for i in reversed(range(PEEK))],
             axis=1
         )
-        to_concat.append(back_df)
 
-    to_concat.append(abslt_df)
-
-    if LOOK_AFTER > 0:
         after_df = pd.concat(
-            [abslt_df.shift(-1 * (i + 1)) for i in range(LOOK_AFTER)],
+            [ampli_df.shift(-i - 1).fillna(0) for i in range(PEEK)],
             axis=1
         )
-        to_concat.append(after_df)
 
-    if LOOK_BACK > 0 or LOOK_AFTER > 0:
-        abslt_eng = pd.concat(to_concat, axis=1)
-    else:
-        abslt_eng = abslt_df
-
-    return abslt_eng.fillna(0).values
+        pd.concat([back_df, ampli_df, after_df], axis=1).values
+    else
+        return ampli
 
 
+# takes two lists of matrices and returns a pair of respectively concatenated
+# matrices
 def concatenate(Xs, Ys):
     return np.concatenate(Xs, axis=0), np.concatenate(Ys, axis=0)
 
 
-def build_X_Y(clean_list, clean_to_noisy, audio_to_abslt, audio_to_abslt_eng):
+# builds the input and output matrices, also returning the lengths of the
+# original matrices extracted from the ckean files
+def build_X_Y(clean_list, clean_to_noisy, audio_to_ampli, audio_to_ampli_eng):
     noisy_matrices = []
     clean_matrices = []
     lengths = []
     for clean in clean_list:
-        clean_matrix = pkl_load(audio_to_abslt[clean])
+        clean_matrix = pkl_load(audio_to_ampli[clean])
         lengths.append(clean_matrix.shape[0])
         for noisy in clean_to_noisy[clean]:
-            noisy_matrix = pkl_load(audio_to_abslt_eng[noisy])
+            noisy_matrix = pkl_load(audio_to_ampli_eng[noisy])
             noisy_matrices.append(noisy_matrix)
             clean_matrices.append(clean_matrix)
     X, Y = concatenate(noisy_matrices, clean_matrices)
     return X, Y, lengths
 
 
+# ensembles a list of matrices into a single one, using weights that are
+# proportional to the distance from the means, to the power of a factor
 def ensemble(Ys_models):
     M = np.array(Ys_models)
     means = M.mean(axis=0)
@@ -178,18 +188,19 @@ def ensemble(Ys_models):
     return np.average(M, weights=weights, axis=0)
 
 
-def extract_ys(Y_model, lengths, clean_list, clean_to_noisy, audio_to_angle):
+def extract_ys(Y_model, lengths, clean_list, clean_to_noisy, audio_to_phase):
     ys_model = {}
     cumulative_length = 0
     for clean, length in zip(clean_list, lengths):
         for noisy in clean_to_noisy[clean]:
-            abslt = Y_model[cumulative_length : cumulative_length + length, :]
-            angle = pkl_load(audio_to_angle[noisy])
-            ys_model[noisy] = abslt_angle_to_y(abslt, angle)
+            ampli = Y_model[cumulative_length : cumulative_length + length, :]
+            phase = pkl_load(audio_to_phase[noisy])
+            ys_model[noisy] = ampli_phase_to_y(ampli, phase)
             cumulative_length += length
     return ys_model
 
 
+# caps the length of two arrays of samples by the size of the shortest one
 def cap(y_1, y_2):
     size = min(y_1.shape[0], y_2.shape[0])
     return y_1[:size], y_2[:size]
@@ -261,7 +272,7 @@ def build_nn(input_dim, output_dim):
     dense_tensor = build_tensor(dense_layers, nn_input)
 
     conv_layers_1 = [
-        Reshape((LOOK_BACK + 1 + LOOK_AFTER, output_dim, 1)),
+        Reshape((1 + 2 * PEEK, output_dim, 1)),
         Conv2D(32, (3, 3), activation="relu", padding="same"),
         MaxPooling2D((2, 2))
     ]

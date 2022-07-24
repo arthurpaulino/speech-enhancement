@@ -24,19 +24,19 @@ for noisy_path in noisy_path_list:
 
     y_to_file(y_noisy, EXPERIMENT_FOLDER_NOISY + noisy_name + ".wav")
 
-    abslt, angle = y_to_abslt_angle(y_noisy)
+    ampli, phase = y_to_ampli_phase(y_noisy)
 
-    abslt_eng = eng_abslt(abslt)
+    ampli_eng = eng_ampli(ampli)
 
     Ys_models = []
 
     for model_path in model_path_list:
         model = pkl_load(model_path)
-        Ys_models.append(model.predict(abslt_eng))
+        Ys_models.append(model.predict(ampli_eng))
 
     Y_models = ensemble(Ys_models)
 
-    y_cleaned = abslt_angle_to_y(Y_models, angle)
+    y_cleaned = ampli_phase_to_y(Y_models, phase)
 
     y_to_file(y_cleaned, EXPERIMENT_FOLDER_CLEANED + noisy_name + ".wav")
 
