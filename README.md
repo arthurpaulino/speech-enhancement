@@ -5,10 +5,14 @@ noisy recordings. Since Keras API is being used, **Python 3.6 is required**.
 
 ## The plan of action
 
-The key idea is to train NNs that map noisy spectrograms into clean ones. Thus,
+The key idea is to train NNs that map noisy spectrograms* into clean ones. Thus,
 we need a set of clean files and a set of noises, then we generate artificially
 noisy files and serve their spectrograms as input to the NNs, for which the
 output is the spectrogram of the respective clean file.
+
+Note*: it's inaccurate to say that we will use spectrograms. The precise data
+that will serve as input for neural networks will be explained in the *Data
+pipeline* section.
 
 On the paper *Causal Speech Enhancement Combining Data-driven Learning and
 Suppression Rule Estimation* by Seyedmahdad Mirsamadi and Ivan Tashev, some NN
@@ -70,11 +74,87 @@ c = a + b * i
 ```
 
 We have almost everything we need to achieve a rich and structured numerical
-representation of audio. The last piece of the puzzle is how to extract the data
+representation of audio. The next piece of the puzzle is how to extract the data
 from a *longer* audio given that we have a tool to deal with *short* chunks of
 air pressure samplings. The answer is to partition longer audios in overlapping
-and shorter pieces (frames). Overlapping avoids eventual "hiccups" that may
-happen due to unlucky numerical leaps between consecutive frames.
+and shorter pieces. Overlapping avoids eventual "hiccups" that may happen due to
+unlucky numerical leaps between consecutive chunks.
+
+Let's visualize the following overlapping chunks
+```
+... ---------------------------------------------------------------- ...
+|___c1___|    |___c3___|    |___c5___| ...
+       |___c2___|    |___c4___|
+```
+
+After processing the chunks above, we get the matrix
+
+```
+        c1     c2     c3     c4     c5  ...
+┌──────────────────────────────────────────
+| ...|  ... |  ... |  ... |  ... |      ...
+| f4 | i4c1 | i4c2 | i4c3 | i4c4 | i4c5 ...
+| f3 | i3c1 | i3c2 | i3c3 | i3c4 | i3c5 ...
+| f2 | i2c1 | i2c2 | i2c3 | i2c4 | i2c5 ...
+| f1 | i1c1 | i1c2 | i1c3 | i1c4 | i1c5 ...
+└──────────────────────────────────────────
+```
+
+Which expands horizontally with time and vertically with frequencies. And
+`i1c1`, for instance, is the complex number that encodes the amplitude and the
+phase of the chunk `c1` at frequence `f1`.
+
+The matrix above is then transposed and transformed into two matrices: one
+containing the absolute values (amplitudes) and the other containing the angles
+(phases) of those complex numbers. The matrix of angles is saved for later and
+the matrix of amplitudes is the one the neural networks operate on.
+
+### Peeking
+
+> a NN for the offline context can have access to some frames ahead of the
+> target frame
+
+Let's call that "peeking". In order to implement peeking in our input matrix of
+amplitudes, we can use vertical shifting. To peek back, we shift down. And to
+peek ahead we shift up:
+
+```
+    shifted down              original                 shifted up
+┌──────────────────┐     ┌──────────────────┐     ┌──────────────────┐
+| 0  | 0  | 0  ... |     | a1 | a2 | a3 ... |     | b1 | b2 | b3 ... |
+| a1 | a2 | a3 ... |     | b1 | b2 | b3 ... |     | c1 | c2 | c3 ... |
+| b1 | b2 | b3 ... |     | c1 | c2 | c3 ... |     | d1 | d2 | d3 ... |
+                                 ...
+```
+
+And we can peek as many frames as we want. At the end we just concatenate all
+matrices horizontally.
+
+### Reshaping
+
+Now we have all ingredients to treat audio as images. With peeking, each line of
+the matrix can now be reshaped into a small matrix that represents a short story
+of the audio.
+
+Let's use the following line as an example:
+
+```
+| a1 | a2 | a3 ... | b1 | b2 | b3 ... | c1 | c2 | c3 ... |
+```
+
+To feed it into a convolutional layer we turn it into the matrix
+
+```
+┌──────────────────┐
+| a1 | a2 | a3 ... |
+| b1 | b2 | b3 ... |
+| c1 | c2 | c3 ... |
+└──────────────────┘
+```
+
+It's a "short story" because each column contains data of neighbor frequencies
+and each line contains data of neighbor frames. Thus, to some extent, it looks
+like a transposed short spectrogram.
 
 ## The proposed architecture
 
