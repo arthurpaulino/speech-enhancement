@@ -9,6 +9,10 @@ SNRS = [-5] # sound to noise ratio (dB). int values, only
 
 ########## data processing ##########
 FFT_MS = 32    # length of each frame in milliseconds
+# it's important to notice that this impacts the size of the neural networks
+# because `_n_fft = round(SAMPLING_RATE * FFT_MS / 1000)` and the number of
+# frequencies extracted is `1 + _n_fft / 2`, that is, the width of the matrix
+
 OVERLAP = 0.75 # the % of overlap between frames
 PEEK = 2       # peek rows above and below then append them to the current row
 

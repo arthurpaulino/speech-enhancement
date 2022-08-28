@@ -64,11 +64,13 @@ _hop_length = round(_n_fft * (1 - OVERLAP))
 ############################ FILES
 
 
+# tells whether a file path refers to an audio file with a valid extension
 def is_valid_audio_file(path):
     extension = path.split(".")[-1]
     return extension in VALID_AUDIO_EXTENSIONS
 
 
+# extracts the file name (without its extension) from a file path
 def filename_from_path(path):
     return path.split("/")[-1].split(".")[0]
 
@@ -156,14 +158,14 @@ def eng_ampli(ampli):
         return ampli
 
 
-# takes two lists of matrices and returns a pair of respectively concatenated
+# takes two lists of matrices and returns the pair of respectively concatenated
 # matrices
 def concatenate(Xs, Ys):
     return np.concatenate(Xs, axis=0), np.concatenate(Ys, axis=0)
 
 
 # builds the input and output matrices, also returning the lengths of the
-# original matrices extracted from the ckean files
+# original matrices extracted from the clean files
 def build_X_Y(clean_list, clean_to_noisy, audio_to_ampli, audio_to_ampli_eng):
     noisy_matrices = []
     clean_matrices = []
@@ -209,10 +211,12 @@ def cap(y_1, y_2):
 ############################ AUDIO
 
 
+# calculates the noise multiplier factor needed to achieve a certain SNR
 def noise_multiplier(y_clean, y_noise, snr):
-    return (y_clean.var() / y_noise.var() / (10 ** (snr / 10))) ** 0.5
+    return (y_clean.var() / y_noise.var() / (10.0 ** (snr / 10.0))) ** 0.5
 
 
+# checks if the constants `PESQ_MODE` and `PESQ_SAMPLING_RATE` are coherent
 def validate_pesq():
     to_quit = False
     if PESQ_MODE not in ["nb", "wb"]:
@@ -228,11 +232,13 @@ def validate_pesq():
         exit()
 
 
+# computes the SNR for a `y_truth` and a `y_valid`
 def snr_fn(y_truth, y_valid):
     y_truth, y_valid = cap(y_truth, y_valid)
     return 10 * np.log10(y_truth.var() / (y_truth - y_valid).var())
 
 
+# computes the PESQ for a `y_truth` and a `y_valid`
 def pesq_fn(y_truth, y_valid):
     y_truth, y_valid = cap(y_truth, y_valid)
     if SAMPLING_RATE != PESQ_SAMPLING_RATE:
@@ -241,11 +247,13 @@ def pesq_fn(y_truth, y_valid):
     return pesq(PESQ_SAMPLING_RATE, y_truth, y_valid, PESQ_MODE)
 
 
+# computes the STOI for a `y_truth` and a `y_valid`
 def stoi_fn(y_truth, y_valid):
     y_truth, y_valid = cap(y_truth, y_valid)
     return stoi(y_truth, y_valid, SAMPLING_RATE, extended=False)
 
 
+# computes the ESTOI for a `y_truth` and a `y_valid`
 def estoi_fn(y_truth, y_valid):
     y_truth, y_valid = cap(y_truth, y_valid)
     return stoi(y_truth, y_valid, SAMPLING_RATE, extended=True)
@@ -261,6 +269,19 @@ def build_tensor(layers, tensor_input):
     return tensor
 
 
+# builds a neural network with the following architecture:
+#               ┌─────┐
+#    ┌─┐        |dense|                ┌─┐
+#    |i| ╔═════>|layer|═════╗ ┌─────┐  |o|
+#    |n|═╝      └─────┘     ╚>|dense|  |u|
+#    |p|      ╔══════════════>|     |═>|t|
+#    |u|═╗ ┌──╨──┐  ┌─────┐ ╔>|layer|  |p|
+#    |t| ╚>|conv |═>|conv |═╝ └─────┘  |u|
+#    └─┘   |layer|  |layer|            |t|
+#          └─────┘  └─────┘            └─┘
+# TODO: maybe we can remove the parallel dense layer at the top as it doesn't
+# seem to be capable of capturing particular data patterns behind another dense
+# layer
 def build_nn(input_dim, output_dim):
     nn_input = Input((input_dim,))
 

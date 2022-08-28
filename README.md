@@ -37,6 +37,45 @@ the optimization attempts will be done with real audio metrics:
 This is a common practice to ensure that the predictions of trained models
 actually translate into audios with better quality.
 
+## Data pipeline
+
+We begin with a digital representation of audio: a sequence of air pressure
+samplings captured at a certain sampling rate, usually measured in kilohertz
+(kHz). Then, with a mathematical process called "Short-time Fourier transform",
+we can extract the fundamental waves from small sequences of samplings, that is,
+a set of sine-like waves that add up to the original one.
+
+A fundamental wave is so simple that it only needs three real numbers to
+represent it: frequency, amplitude and phase. We say that we can extract a *set*
+of fundamental waves because we get, for each frequency, its amplitude and its
+phase. Of course there's no such thing as "each frequency" for the domain of
+frequencies is the real numbers. But let's abstract that and move on with the
+idea that this process is done for a sufficiently large set of well defined
+frequencies.
+
+Numerically speaking, however, the pair amplitude+phase is represented as a
+complex number whose absolute value is the amplitude and whose angle is the
+phase.
+
+```
+c = a + b * i
+
+      |
+      b...c (The absolute value is the distance from the origin to this point)
+      |  /.
+      | / .
+      |/ (Angle)
+──────|───a────
+      |
+```
+
+We have almost everything we need to achieve a rich and structured numerical
+representation of audio. The last piece of the puzzle is how to extract the data
+from a *longer* audio given that we have a tool to deal with *short* chunks of
+air pressure samplings. The answer is to partition longer audios in overlapping
+and shorter pieces (frames). Overlapping avoids eventual "hiccups" that may
+happen due to unlucky numerical leaps between consecutive frames.
+
 ## The proposed architecture
 
 On a typical image classification problem, we want to use convolution to extract
